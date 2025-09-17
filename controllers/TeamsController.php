@@ -11,7 +11,7 @@ class TeamsController {
         $this->db = $database->getConnection();
     }
     
-    public function index($search = '', $page = 1, $limit = 10) {
+    public function index($search = '', $page = 1, $limit = 12) {
         $offset = ($page - 1) * $limit;
         $whereConditions = [];
         $params = [];
@@ -23,8 +23,7 @@ class TeamsController {
         
         $whereClause = !empty($whereConditions) ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
         
-        $query = "SELECT e.*, 
-                         COUNT(em.usuario_id) as total_membros
+        $query = "SELECT e.*, COUNT(em.usuario_id) as total_membros 
                   FROM equipes e 
                   LEFT JOIN equipe_membros em ON e.id = em.equipe_id 
                   $whereClause
@@ -43,7 +42,7 @@ class TeamsController {
         $teams = $stmt->fetchAll();
         
         // Contar total de registros
-        $countQuery = "SELECT COUNT(*) as total FROM equipes e $whereClause";
+        $countQuery = "SELECT COUNT(DISTINCT e.id) as total FROM equipes e $whereClause";
         $countStmt = $this->db->prepare($countQuery);
         foreach ($params as $key => $value) {
             $countStmt->bindValue($key, $value);
@@ -76,7 +75,6 @@ class TeamsController {
     }
     
     public function update($id, $data) {
-        // Buscar dados anteriores para log
         $oldData = $this->getById($id);
         
         $query = "UPDATE equipes SET nome = :nome, descricao = :descricao WHERE id = :id";
@@ -118,11 +116,23 @@ class TeamsController {
     }
     
     public function getTeamMembers($team_id) {
-        $query = "SELECT u.*, em.data_entrada 
-                  FROM usuarios u 
+        $query = "SELECT u.* FROM usuarios u 
                   INNER JOIN equipe_membros em ON u.id = em.usuario_id 
                   WHERE em.equipe_id = :team_id 
                   ORDER BY u.nome_completo";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':team_id', $team_id);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+    
+    public function getTeamProjects($team_id) {
+        $query = "SELECT p.*, u.nome_completo as gerente_nome 
+                  FROM projetos p 
+                  INNER JOIN projeto_equipes pe ON p.id = pe.projeto_id 
+                  LEFT JOIN usuarios u ON p.gerente_id = u.id 
+                  WHERE pe.equipe_id = :team_id 
+                  ORDER BY p.data_criacao DESC";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':team_id', $team_id);
         $stmt->execute();
@@ -155,7 +165,8 @@ class TeamsController {
         $stmt->bindParam(':user_id', $user_id);
         
         if ($stmt->execute()) {
-            logSystemAction($_SESSION['user_id'], 'Membro adicionado à equipe', 'equipe_membros', null, null, ['equipe_id' => $team_id, 'usuario_id' => $user_id]);
+            logSystemAction($_SESSION['user_id'], 'Membro adicionado à equipe', 'equipe_membros', null, null, 
+                ['equipe_id' => $team_id, 'usuario_id' => $user_id]);
             return true;
         }
         
@@ -169,59 +180,76 @@ class TeamsController {
         $stmt->bindParam(':user_id', $user_id);
         
         if ($stmt->execute()) {
-            logSystemAction($_SESSION['user_id'], 'Membro removido da equipe', 'equipe_membros', null, ['equipe_id' => $team_id, 'usuario_id' => $user_id], null);
+            logSystemAction($_SESSION['user_id'], 'Membro removido da equipe', 'equipe_membros', null, 
+                ['equipe_id' => $team_id, 'usuario_id' => $user_id], null);
             return true;
         }
         
         return false;
     }
     
-    public function getTeamProjects($team_id) {
-        $query = "SELECT p.*, pe.data_atribuicao 
-                  FROM projetos p 
-                  INNER JOIN projeto_equipes pe ON p.id = pe.projeto_id 
-                  WHERE pe.equipe_id = :team_id 
-                  ORDER BY pe.data_atribuicao DESC";
-        $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':team_id', $team_id);
-        $stmt->execute();
-        return $stmt->fetchAll();
-    }
-    
     public function getTeamStats($team_id) {
+        $stats = [
+            'total_projetos' => 0,
+            'total_tarefas' => 0,
+            'tarefas_concluidas' => 0,
+            'percentual_conclusao' => 0
+        ];
+        
         // Total de projetos da equipe
-        $query = "SELECT COUNT(*) as total_projetos FROM projeto_equipes WHERE equipe_id = :team_id";
+        $query = "SELECT COUNT(*) as total FROM projeto_equipes WHERE equipe_id = :team_id";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':team_id', $team_id);
         $stmt->execute();
-        $totalProjetos = $stmt->fetch()['total_projetos'];
+        $stats['total_projetos'] = $stmt->fetch()['total'];
         
-        // Total de tarefas da equipe
-        $query = "SELECT COUNT(*) as total_tarefas 
+        // Total de tarefas dos projetos da equipe
+        $query = "SELECT COUNT(t.id) as total, 
+                         SUM(CASE WHEN t.status = 'concluida' THEN 1 ELSE 0 END) as concluidas
                   FROM tarefas t 
                   INNER JOIN projeto_equipes pe ON t.projeto_id = pe.projeto_id 
                   WHERE pe.equipe_id = :team_id";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':team_id', $team_id);
         $stmt->execute();
-        $totalTarefas = $stmt->fetch()['total_tarefas'];
+        $result = $stmt->fetch();
         
-        // Tarefas concluídas
-        $query = "SELECT COUNT(*) as tarefas_concluidas 
-                  FROM tarefas t 
-                  INNER JOIN projeto_equipes pe ON t.projeto_id = pe.projeto_id 
-                  WHERE pe.equipe_id = :team_id AND t.status = 'concluida'";
+        $stats['total_tarefas'] = $result['total'] ?? 0;
+        $stats['tarefas_concluidas'] = $result['concluidas'] ?? 0;
+        
+        if ($stats['total_tarefas'] > 0) {
+            $stats['percentual_conclusao'] = round(($stats['tarefas_concluidas'] / $stats['total_tarefas']) * 100);
+        }
+        
+        return $stats;
+    }
+    
+    public function getAll() {
+        $query = "SELECT * FROM equipes ORDER BY nome";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+    
+    public function getUserTeams($user_id) {
+        $query = "SELECT e.* FROM equipes e 
+                  INNER JOIN equipe_membros em ON e.id = em.equipe_id 
+                  WHERE em.usuario_id = :user_id 
+                  ORDER BY e.nome";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':user_id', $user_id);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+    
+    public function isUserInTeam($team_id, $user_id) {
+        $query = "SELECT COUNT(*) as total FROM equipe_membros 
+                  WHERE equipe_id = :team_id AND usuario_id = :user_id";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':team_id', $team_id);
+        $stmt->bindParam(':user_id', $user_id);
         $stmt->execute();
-        $tarefasConcluidas = $stmt->fetch()['tarefas_concluidas'];
-        
-        return [
-            'total_projetos' => $totalProjetos,
-            'total_tarefas' => $totalTarefas,
-            'tarefas_concluidas' => $tarefasConcluidas,
-            'percentual_conclusao' => $totalTarefas > 0 ? round(($tarefasConcluidas / $totalTarefas) * 100, 2) : 0
-        ];
+        return $stmt->fetch()['total'] > 0;
     }
 }
 ?>
