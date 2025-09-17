@@ -1,154 +1,146 @@
--- Criação do banco de dados
-CREATE DATABASE IF NOT EXISTS sistema_projetos;
-USE sistema_projetos;
+-- --------------------------------------------------------
+-- Servidor:                     127.0.0.1
+-- Versão do servidor:           10.4.32-MariaDB - mariadb.org binary distribution
+-- OS do Servidor:               Win64
+-- HeidiSQL Versão:              12.11.0.7065
+-- --------------------------------------------------------
 
--- Tabela de usuários
-CREATE TABLE IF NOT EXISTS usuarios (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nome_completo VARCHAR(255) NOT NULL,
-    cpf VARCHAR(14) UNIQUE NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    cargo VARCHAR(100),
-    login VARCHAR(50) UNIQUE NOT NULL,
-    senha VARCHAR(255) NOT NULL,
-    perfil ENUM('administrador', 'gerente', 'colaborador') NOT NULL,
-    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET NAMES utf8 */;
+/*!50503 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
--- Tabela de projetos
-CREATE TABLE IF NOT EXISTS projetos (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(255) NOT NULL,
-    descricao TEXT,
-    data_inicio DATE,
-    data_termino_prevista DATE,
-    status ENUM('planejado', 'em_andamento', 'concluido', 'cancelado') DEFAULT 'planejado',
-    gerente_id INT,
-    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (gerente_id) REFERENCES usuarios(id)
-);
 
--- Tabela de tarefas
-CREATE TABLE IF NOT EXISTS tarefas (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    titulo VARCHAR(255) NOT NULL,
-    descricao TEXT,
-    projeto_id INT NOT NULL,
-    responsavel_id INT,
-    status ENUM('pendente', 'em_execucao', 'concluida') DEFAULT 'pendente',
-    data_inicio DATE,
-    data_fim_prevista DATE,
-    data_fim_real DATE,
-    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (projeto_id) REFERENCES projetos(id) ON DELETE CASCADE,
-    FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
-);
+-- Copiando estrutura do banco de dados para sistema_projetos
+CREATE DATABASE IF NOT EXISTS `sistema_projetos` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */;
+USE `sistema_projetos`;
 
--- Tabela de equipes
-CREATE TABLE IF NOT EXISTS equipes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(255) NOT NULL,
-    descricao TEXT,
-    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+-- Copiando estrutura para tabela sistema_projetos.equipes
+CREATE TABLE IF NOT EXISTS `equipes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nome` varchar(255) NOT NULL,
+  `descricao` text DEFAULT NULL,
+  `data_criacao` timestamp NOT NULL DEFAULT current_timestamp(),
+  `data_atualizacao` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Tabela de membros das equipes
-CREATE TABLE IF NOT EXISTS equipe_membros (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    equipe_id INT NOT NULL,
-    usuario_id INT NOT NULL,
-    data_entrada TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (equipe_id) REFERENCES equipes(id) ON DELETE CASCADE,
-    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_member (equipe_id, usuario_id)
-);
+-- Exportação de dados foi desmarcado.
 
--- Tabela de relacionamento entre projetos e equipes
-CREATE TABLE IF NOT EXISTS projeto_equipes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    projeto_id INT NOT NULL,
-    equipe_id INT NOT NULL,
-    data_atribuicao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (projeto_id) REFERENCES projetos(id) ON DELETE CASCADE,
-    FOREIGN KEY (equipe_id) REFERENCES equipes(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_assignment (projeto_id, equipe_id)
-);
+-- Copiando estrutura para tabela sistema_projetos.equipe_membros
+CREATE TABLE IF NOT EXISTS `equipe_membros` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `equipe_id` int(11) NOT NULL,
+  `usuario_id` int(11) NOT NULL,
+  `data_entrada` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_member` (`equipe_id`,`usuario_id`),
+  KEY `usuario_id` (`usuario_id`),
+  CONSTRAINT `equipe_membros_ibfk_1` FOREIGN KEY (`equipe_id`) REFERENCES `equipes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `equipe_membros_ibfk_2` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Tabela de logs do sistema
-CREATE TABLE IF NOT EXISTS logs_sistema (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    usuario_id INT,
-    acao VARCHAR(255) NOT NULL,
-    tabela_afetada VARCHAR(100),
-    registro_id INT,
-    dados_anteriores JSON,
-    dados_novos JSON,
-    ip_address VARCHAR(45),
-    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-);
+-- Exportação de dados foi desmarcado.
 
--- Inserir usuários de teste
-INSERT INTO usuarios (nome_completo, cpf, email, cargo, login, senha, perfil) VALUES
-('Administrador do Sistema', '000.000.000-00', 'admin@techcorp.com', 'Administrador', 'admin', MD5('123456'), 'administrador'),
-('João Silva Santos', '111.111.111-11', 'joao@techcorp.com', 'Gerente de Projetos', 'gerente', MD5('123456'), 'gerente'),
-('Maria Oliveira Costa', '222.222.222-22', 'maria@techcorp.com', 'Desenvolvedora Senior', 'colaborador', MD5('123456'), 'colaborador'),
-('Pedro Almeida Lima', '333.333.333-33', 'pedro@techcorp.com', 'Analista de Sistemas', 'pedro', MD5('123456'), 'colaborador'),
-('Ana Carolina Ferreira', '444.444.444-44', 'ana@techcorp.com', 'Designer UX/UI', 'ana', MD5('123456'), 'colaborador');
+-- Copiando estrutura para tabela sistema_projetos.logs_sistema
+CREATE TABLE IF NOT EXISTS `logs_sistema` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `usuario_id` int(11) DEFAULT NULL,
+  `acao` varchar(255) NOT NULL,
+  `tabela_afetada` varchar(100) DEFAULT NULL,
+  `registro_id` int(11) DEFAULT NULL,
+  `dados_anteriores` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`dados_anteriores`)),
+  `dados_novos` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`dados_novos`)),
+  `ip_address` varchar(45) DEFAULT NULL,
+  `data_criacao` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `usuario_id` (`usuario_id`),
+  CONSTRAINT `logs_sistema_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=59 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Inserir projetos de exemplo
-INSERT INTO projetos (nome, descricao, data_inicio, data_termino_prevista, status, gerente_id) VALUES
-('Sistema de E-commerce', 'Desenvolvimento de plataforma de vendas online completa', '2024-01-15', '2024-06-30', 'em_andamento', 2),
-('App Mobile Corporativo', 'Aplicativo móvel para gestão interna da empresa', '2024-02-01', '2024-05-15', 'em_andamento', 2),
-('Migração para Cloud', 'Migração da infraestrutura atual para AWS', '2024-03-01', '2024-08-30', 'planejado', 2),
-('Sistema de CRM', 'Customer Relationship Management personalizado', '2023-11-01', '2024-02-28', 'concluido', 2),
-('Portal do Cliente', 'Portal web para atendimento ao cliente', '2024-01-10', '2024-04-10', 'cancelado', 2);
+-- Exportação de dados foi desmarcado.
 
--- Inserir equipes
-INSERT INTO equipes (nome, descricao) VALUES
-('Desenvolvimento Frontend', 'Equipe responsável pelo desenvolvimento da interface do usuário'),
-('Desenvolvimento Backend', 'Equipe responsável pela lógica de negócio e APIs'),
-('DevOps', 'Equipe responsável pela infraestrutura e deploy'),
-('UX/UI Design', 'Equipe responsável pela experiência e interface do usuário'),
-('Quality Assurance', 'Equipe responsável pelos testes e qualidade do software');
+-- Copiando estrutura para tabela sistema_projetos.projetos
+CREATE TABLE IF NOT EXISTS `projetos` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nome` varchar(255) NOT NULL,
+  `descricao` text DEFAULT NULL,
+  `data_inicio` date DEFAULT NULL,
+  `data_termino_prevista` date DEFAULT NULL,
+  `status` enum('planejado','em_andamento','concluido','cancelado') DEFAULT 'planejado',
+  `gerente_id` int(11) DEFAULT NULL,
+  `data_criacao` timestamp NOT NULL DEFAULT current_timestamp(),
+  `data_atualizacao` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `gerente_id` (`gerente_id`),
+  CONSTRAINT `projetos_ibfk_1` FOREIGN KEY (`gerente_id`) REFERENCES `usuarios` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Inserir membros nas equipes
-INSERT INTO equipe_membros (equipe_id, usuario_id) VALUES
-(1, 3), (1, 4),  -- Frontend: Maria, Pedro
-(2, 3), (2, 5),  -- Backend: Maria, Ana
-(3, 4),          -- DevOps: Pedro
-(4, 5),          -- UX/UI: Ana
-(5, 3), (5, 4);  -- QA: Maria, Pedro
+-- Exportação de dados foi desmarcado.
 
--- Inserir relacionamento projeto-equipe
-INSERT INTO projeto_equipes (projeto_id, equipe_id) VALUES
-(1, 1), (1, 2), (1, 4), (1, 5),  -- E-commerce: Frontend, Backend, UX/UI, QA
-(2, 1), (2, 2), (2, 4),          -- App Mobile: Frontend, Backend, UX/UI
-(3, 3),                          -- Cloud: DevOps
-(4, 2), (4, 5),                  -- CRM: Backend, QA
-(5, 1), (5, 4);                  -- Portal: Frontend, UX/UI
+-- Copiando estrutura para tabela sistema_projetos.projeto_equipes
+CREATE TABLE IF NOT EXISTS `projeto_equipes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `projeto_id` int(11) NOT NULL,
+  `equipe_id` int(11) NOT NULL,
+  `data_atribuicao` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_assignment` (`projeto_id`,`equipe_id`),
+  KEY `equipe_id` (`equipe_id`),
+  CONSTRAINT `projeto_equipes_ibfk_1` FOREIGN KEY (`projeto_id`) REFERENCES `projetos` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `projeto_equipes_ibfk_2` FOREIGN KEY (`equipe_id`) REFERENCES `equipes` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Inserir tarefas de exemplo
-INSERT INTO tarefas (titulo, descricao, projeto_id, responsavel_id, status, data_inicio, data_fim_prevista) VALUES
-('Configurar ambiente de desenvolvimento', 'Preparar ambiente local e repositório', 1, 3, 'concluida', '2024-01-15', '2024-01-20'),
-('Desenvolver tela de login', 'Criar interface de autenticação', 1, 3, 'concluida', '2024-01-21', '2024-01-25'),
-('Implementar API de produtos', 'Criar endpoints para gestão de produtos', 1, 4, 'em_execucao', '2024-01-26', '2024-02-05'),
-('Design da homepage', 'Criar layout da página inicial', 1, 5, 'em_execucao', '2024-01-22', '2024-02-01'),
-('Testes de integração', 'Executar testes entre componentes', 1, 3, 'pendente', '2024-02-06', '2024-02-10'),
+-- Exportação de dados foi desmarcado.
 
-('Prototipagem do app', 'Criar protótipo navegável', 2, 5, 'concluida', '2024-02-01', '2024-02-10'),
-('Configurar React Native', 'Setup do projeto mobile', 2, 3, 'em_execucao', '2024-02-11', '2024-02-15'),
-('Desenvolver navegação', 'Implementar sistema de rotas', 2, 4, 'pendente', '2024-02-16', '2024-02-25'),
+-- Copiando estrutura para tabela sistema_projetos.tarefas
+CREATE TABLE IF NOT EXISTS `tarefas` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `titulo` varchar(255) NOT NULL,
+  `descricao` text DEFAULT NULL,
+  `projeto_id` int(11) NOT NULL,
+  `responsavel_id` int(11) DEFAULT NULL,
+  `status` enum('pendente','em_execucao','concluida') DEFAULT 'pendente',
+  `data_inicio` date DEFAULT NULL,
+  `data_fim_prevista` date DEFAULT NULL,
+  `data_fim_real` date DEFAULT NULL,
+  `data_criacao` timestamp NOT NULL DEFAULT current_timestamp(),
+  `data_atualizacao` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `projeto_id` (`projeto_id`),
+  KEY `responsavel_id` (`responsavel_id`),
+  CONSTRAINT `tarefas_ibfk_1` FOREIGN KEY (`projeto_id`) REFERENCES `projetos` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `tarefas_ibfk_2` FOREIGN KEY (`responsavel_id`) REFERENCES `usuarios` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-('Análise de custos AWS', 'Levantamento de custos da migração', 3, 4, 'pendente', '2024-03-01', '2024-03-10'),
-('Plano de migração', 'Documentar estratégia de migração', 3, 4, 'pendente', '2024-03-11', '2024-03-20');
+-- Exportação de dados foi desmarcado.
 
--- Inserir alguns logs de exemplo
-INSERT INTO logs_sistema (usuario_id, acao, ip_address) VALUES
-(1, 'Login realizado', '192.168.1.100'),
-(2, 'Login realizado', '192.168.1.101'),
-(3, 'Login realizado', '192.168.1.102');
+-- Copiando estrutura para tabela sistema_projetos.usuarios
+CREATE TABLE IF NOT EXISTS `usuarios` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nome_completo` varchar(255) NOT NULL,
+  `cpf` varchar(14) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `cargo` varchar(100) DEFAULT NULL,
+  `login` varchar(50) NOT NULL,
+  `senha` varchar(255) NOT NULL,
+  `perfil` enum('administrador','gerente','colaborador') NOT NULL,
+  `data_criacao` timestamp NOT NULL DEFAULT current_timestamp(),
+  `data_atualizacao` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `cpf` (`cpf`),
+  UNIQUE KEY `email` (`email`),
+  UNIQUE KEY `login` (`login`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Exportação de dados foi desmarcado.
+
+/*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
+/*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
+/*!40014 SET FOREIGN_KEY_CHECKS=IFNULL(@OLD_FOREIGN_KEY_CHECKS, 1) */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40111 SET SQL_NOTES=IFNULL(@OLD_SQL_NOTES, 1) */;
