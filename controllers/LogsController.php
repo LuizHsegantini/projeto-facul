@@ -1,6 +1,7 @@
 ﻿<?php
-// controllers/LogsController.php
-require_once 'config/database.php';
+// controllers/LogsController.php - Versão corrigida para MagicKids Eventos
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/LogService.php';
 
 class LogsController
 {
@@ -30,14 +31,14 @@ class LogsController
         $limit = 20
     ): array {
         $page = max(1, (int) $page);
-        $limit = max(1, (int) $limit);
+        $limit = max(1, min(100, (int) $limit)); // Máximo 100 por página
         $offset = ($page - 1) * $limit;
 
         $filters = [
-            'search' => $search,
+            'search' => trim($search),
             'user_id' => $userId,
-            'action' => $action,
-            'table' => $table,
+            'action' => trim($action),
+            'table' => trim($table),
             'start_date' => $startDate,
             'end_date' => $endDate,
         ];
@@ -45,53 +46,94 @@ class LogsController
         [$conditions, $params] = $this->buildFilters($filters);
         $whereClause = $this->buildWhereClause($conditions);
 
-        $sql = "SELECT \
-                    l.id,\
-                    l.usuario_id,\
-                    l.acao,\
-                    l.tabela_afetada,\
-                    l.registro_id,\
-                    l.dados_anteriores,\
-                    l.dados_novos,\
-                    l.ip_address,\
-                    l.data_criacao,\
-                    u.nome_completo AS usuario_nome\
-                FROM logs_sistema l\
-                LEFT JOIN usuarios u ON u.id = l.usuario_id\
-                $whereClause\
-                ORDER BY l.data_criacao DESC\
+        // Query simplificada primeiro para testar
+        $sql = "SELECT 
+                    l.id,
+                    l.usuario_id,
+                    l.acao,
+                    l.tabela_afetada,
+                    l.registro_id,
+                    l.dados_anteriores,
+                    l.dados_novos,
+                    l.ip_address,
+                    l.data_criacao,
+                    COALESCE(u.nome_completo, 'Sistema') AS usuario_nome
+                FROM logs_sistema l
+                LEFT JOIN usuarios u ON u.id = l.usuario_id
+                $whereClause
+                ORDER BY l.id DESC
                 LIMIT :limit OFFSET :offset";
 
-        $stmt = $this->conn->prepare($sql);
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value);
+        try {
+            $stmt = $this->conn->prepare($sql);
+            
+            // Debug: log da query
+            error_log("Query SQL: " . $sql);
+            error_log("Parâmetros: " . print_r($params, true));
+            
+            // Bind dos parâmetros de filtro
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            
+            $stmt->execute();
+            $logs = $stmt->fetchAll();
+
+            error_log("Logs encontrados: " . count($logs));
+
+            // Formatar logs
+            $logs = array_map(function (array $row) {
+                return $this->formatLogRow($row);
+            }, $logs);
+
+            // Contar total de registros
+            $countSql = "SELECT COUNT(*) AS total
+                         FROM logs_sistema l
+                         LEFT JOIN usuarios u ON u.id = l.usuario_id
+                         $whereClause";
+            
+            $countStmt = $this->conn->prepare($countSql);
+            foreach ($params as $key => $value) {
+                $countStmt->bindValue($key, $value);
+            }
+            $countStmt->execute();
+            $totalRecords = (int) $countStmt->fetchColumn();
+
+            error_log("Total de registros: " . $totalRecords);
+
+            return [
+                'logs' => $logs,
+                'total' => $totalRecords,
+                'pages' => (int) ceil($totalRecords / $limit),
+                'current_page' => $page,
+                'per_page' => $limit,
+            ];
+
+        } catch (PDOException $e) {
+            error_log("Erro ao buscar logs: " . $e->getMessage());
+            error_log("SQL State: " . $e->getCode());
+            
+            // Tentar query mais simples para debug
+            try {
+                $debugSql = "SELECT COUNT(*) FROM logs_sistema";
+                $debugStmt = $this->conn->prepare($debugSql);
+                $debugStmt->execute();
+                $debugCount = $debugStmt->fetchColumn();
+                error_log("Debug - Total de logs na tabela: " . $debugCount);
+            } catch (Exception $e2) {
+                error_log("Erro no debug: " . $e2->getMessage());
+            }
+            
+            return [
+                'logs' => [],
+                'total' => 0,
+                'pages' => 0,
+                'current_page' => 1,
+                'per_page' => $limit,
+            ];
         }
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-
-        $logs = array_map(function (array $row) {
-            return $this->formatLogRow($row);
-        }, $stmt->fetchAll());
-
-        $countSql = "SELECT COUNT(*) AS total\
-                     FROM logs_sistema l\
-                     LEFT JOIN usuarios u ON u.id = l.usuario_id\
-                     $whereClause";
-        $countStmt = $this->conn->prepare($countSql);
-        foreach ($params as $key => $value) {
-            $countStmt->bindValue($key, $value);
-        }
-        $countStmt->execute();
-        $totalRecords = (int) $countStmt->fetchColumn();
-
-        return [
-            'logs' => $logs,
-            'total' => $totalRecords,
-            'pages' => (int) ceil($totalRecords / $limit),
-            'current_page' => $page,
-            'per_page' => $limit,
-        ];
     }
 
     public function exportLogs($filters = [], int $limit = 2000): array
@@ -100,49 +142,53 @@ class LogsController
             $filters = [];
         }
 
-        $limit = max(1, $limit);
+        $limit = max(1, min(5000, $limit)); // Máximo 5000 para export
         [$conditions, $params] = $this->buildFilters($filters);
         $whereClause = $this->buildWhereClause($conditions);
 
-        $sql = "SELECT \
-                    l.id,\
-                    l.usuario_id,\
-                    l.acao,\
-                    l.tabela_afetada,\
-                    l.registro_id,\
-                    l.dados_anteriores,\
-                    l.dados_novos,\
-                    l.ip_address,\
-                    l.data_criacao,\
-                    u.nome_completo AS usuario_nome\
-                FROM logs_sistema l\
-                LEFT JOIN usuarios u ON u.id = l.usuario_id\
-                $whereClause\
-                ORDER BY l.data_criacao DESC\
+        $sql = "SELECT 
+                    l.id,
+                    l.usuario_id,
+                    l.acao,
+                    l.tabela_afetada,
+                    l.registro_id,
+                    l.dados_anteriores,
+                    l.dados_novos,
+                    l.ip_address,
+                    l.data_criacao,
+                    u.nome_completo AS usuario_nome
+                FROM logs_sistema l
+                LEFT JOIN usuarios u ON u.id = l.usuario_id
+                $whereClause
+                ORDER BY l.data_criacao DESC
                 LIMIT :limit";
 
-        $stmt = $this->conn->prepare($sql);
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value);
+        try {
+            $stmt = $this->conn->prepare($sql);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->execute();
+
+            return array_map(function (array $row) {
+                $formatted = $this->formatLogRow($row);
+
+                return [
+                    'id' => $formatted['id'],
+                    'usuario_nome' => $formatted['usuario_nome'] ?? 'Sistema',
+                    'acao' => $formatted['acao'],
+                    'tabela_afetada' => $formatted['tabela_afetada'] ?? '-',
+                    'registro_id' => $formatted['registro_id'] ?? '-',
+                    'ip_address' => $formatted['ip_address'] ?? '-',
+                    'data_criacao' => $formatted['data_criacao'],
+                ];
+            }, $stmt->fetchAll());
+
+        } catch (PDOException $e) {
+            error_log("Erro ao exportar logs: " . $e->getMessage());
+            return [];
         }
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->execute();
-
-        return array_map(function (array $row) {
-            $formatted = $this->formatLogRow($row);
-
-            return [
-                'id' => $formatted['id'],
-                'usuario_nome' => $formatted['usuario_nome'] ?? 'Sistema',
-                'acao' => $formatted['acao'],
-                'tabela_afetada' => $formatted['tabela_afetada'] ?? '-',
-                'registro_id' => $formatted['registro_id'] ?? '-',
-                'ip_address' => $formatted['ip_address'] ?? '-',
-                'data_criacao' => $formatted['data_criacao'],
-                'dados_anteriores' => $formatted['dados_anteriores'],
-                'dados_novos' => $formatted['dados_novos'],
-            ];
-        }, $stmt->fetchAll());
     }
 
     public function getLogStatistics(
@@ -156,10 +202,10 @@ class LogsController
         $filters = [
             'start_date' => $startDate,
             'end_date' => $endDate,
-            'search' => $search,
+            'search' => trim($search),
             'user_id' => $userId,
-            'action' => $action,
-            'table' => $table,
+            'action' => trim($action),
+            'table' => trim($table),
         ];
 
         [$conditions, $params] = $this->buildFilters($filters);
@@ -172,121 +218,158 @@ class LogsController
             'logs_por_dia' => [],
         ];
 
-        // Total de logs
-        $totalSql = "SELECT COUNT(*) FROM logs_sistema l LEFT JOIN usuarios u ON u.id = l.usuario_id $whereClause";
-        $stmt = $this->conn->prepare($totalSql);
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value);
-        }
-        $stmt->execute();
-        $stats['total_logs'] = (int) $stmt->fetchColumn();
+        try {
+            // Total de logs
+            $totalSql = "SELECT COUNT(*) FROM logs_sistema l LEFT JOIN usuarios u ON u.id = l.usuario_id $whereClause";
+            $stmt = $this->conn->prepare($totalSql);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+            $stmt->execute();
+            $stats['total_logs'] = (int) $stmt->fetchColumn();
 
-        // Logs por ação
-        $acaoSql = "SELECT l.acao, COUNT(*) AS total\
-                    FROM logs_sistema l\
-                    LEFT JOIN usuarios u ON u.id = l.usuario_id\
-                    $whereClause\
-                    GROUP BY l.acao\
-                    ORDER BY total DESC";
-        $stmt = $this->conn->prepare($acaoSql);
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value);
-        }
-        $stmt->execute();
-        $stats['logs_por_acao'] = $stmt->fetchAll();
+            // Logs por ação
+            $acaoSql = "SELECT l.acao, COUNT(*) AS total
+                        FROM logs_sistema l
+                        LEFT JOIN usuarios u ON u.id = l.usuario_id
+                        $whereClause
+                        GROUP BY l.acao
+                        ORDER BY total DESC
+                        LIMIT 20";
+            $stmt = $this->conn->prepare($acaoSql);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+            $stmt->execute();
+            $stats['logs_por_acao'] = $stmt->fetchAll();
 
-        // Logs por usuário
-        $usuarioSql = "SELECT COALESCE(u.nome_completo, 'Sistema') AS nome_completo, COUNT(l.id) AS total\
-                       FROM logs_sistema l\
-                       LEFT JOIN usuarios u ON u.id = l.usuario_id\
-                       $whereClause\
-                       GROUP BY l.usuario_id, u.nome_completo\
-                       ORDER BY total DESC\
-                       LIMIT 10";
-        $stmt = $this->conn->prepare($usuarioSql);
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value);
-        }
-        $stmt->execute();
-        $stats['logs_por_usuario'] = $stmt->fetchAll();
+            // Logs por usuário
+            $usuarioSql = "SELECT 
+                               COALESCE(u.nome_completo, 'Sistema') AS nome_completo, 
+                               COUNT(l.id) AS total
+                           FROM logs_sistema l
+                           LEFT JOIN usuarios u ON u.id = l.usuario_id
+                           $whereClause
+                           GROUP BY l.usuario_id, u.nome_completo
+                           ORDER BY total DESC
+                           LIMIT 20";
+            $stmt = $this->conn->prepare($usuarioSql);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+            $stmt->execute();
+            $stats['logs_por_usuario'] = $stmt->fetchAll();
 
-        // Logs por dia (últimos 7 dias considerando filtros)
-        $diaConditions = $conditions;
-        if (!$this->hasDateFilter($filters)) {
-            $diaConditions[] = "DATE(l.data_criacao) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
-        }
-        $diaWhere = $this->buildWhereClause($diaConditions);
+            // Logs por dia (últimos 30 dias se não houver filtro de data)
+            $diaConditions = $conditions;
+            if (!$this->hasDateFilter($filters)) {
+                $diaConditions[] = "DATE(l.data_criacao) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+            }
+            $diaWhere = $this->buildWhereClause($diaConditions);
 
-        $diaSql = "SELECT DATE(l.data_criacao) AS data, COUNT(*) AS total\
-                   FROM logs_sistema l\
-                   LEFT JOIN usuarios u ON u.id = l.usuario_id\
-                   $diaWhere\
-                   GROUP BY DATE(l.data_criacao)\
-                   ORDER BY data DESC";
-        $stmt = $this->conn->prepare($diaSql);
-        foreach ($params as $key => $value) {
-            $stmt->bindValue($key, $value);
+            $diaSql = "SELECT DATE(l.data_criacao) AS data, COUNT(*) AS total
+                       FROM logs_sistema l
+                       LEFT JOIN usuarios u ON u.id = l.usuario_id
+                       $diaWhere
+                       GROUP BY DATE(l.data_criacao)
+                       ORDER BY data DESC
+                       LIMIT 30";
+            $stmt = $this->conn->prepare($diaSql);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value);
+            }
+            $stmt->execute();
+            $stats['logs_por_dia'] = $stmt->fetchAll();
+
+        } catch (PDOException $e) {
+            error_log("Erro ao buscar estatísticas de logs: " . $e->getMessage());
         }
-        $stmt->execute();
-        $stats['logs_por_dia'] = $stmt->fetchAll();
 
         return $stats;
     }
 
     public function getUsers(): array
     {
-        $sql = "SELECT DISTINCT u.id, u.nome_completo\
-                FROM logs_sistema l\
-                INNER JOIN usuarios u ON u.id = l.usuario_id\
-                ORDER BY u.nome_completo";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll();
+        try {
+            $sql = "SELECT DISTINCT u.id, u.nome_completo
+                    FROM logs_sistema l
+                    INNER JOIN usuarios u ON u.id = l.usuario_id
+                    WHERE u.nome_completo IS NOT NULL
+                    ORDER BY u.nome_completo";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Erro ao buscar usuários: " . $e->getMessage());
+            return [];
+        }
     }
 
     public function getActions(): array
     {
-        $sql = "SELECT DISTINCT acao FROM logs_sistema ORDER BY acao";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll();
+        try {
+            $sql = "SELECT DISTINCT acao FROM logs_sistema WHERE acao IS NOT NULL ORDER BY acao";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Erro ao buscar ações: " . $e->getMessage());
+            return [];
+        }
     }
 
     public function getTables(): array
     {
-        $sql = "SELECT DISTINCT tabela_afetada\
-                FROM logs_sistema\
-                WHERE tabela_afetada IS NOT NULL AND tabela_afetada <> ''\
-                ORDER BY tabela_afetada";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll();
+        try {
+            $sql = "SELECT DISTINCT tabela_afetada
+                    FROM logs_sistema
+                    WHERE tabela_afetada IS NOT NULL AND tabela_afetada <> ''
+                    ORDER BY tabela_afetada";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Erro ao buscar tabelas: " . $e->getMessage());
+            return [];
+        }
     }
 
-    public function cleanOldLogs(int $days = 90)
+    public function cleanOldLogs(int $days = 90): int
     {
         $days = max(1, $days);
-        $sql = "DELETE FROM logs_sistema WHERE data_criacao < DATE_SUB(NOW(), INTERVAL :days DAY)";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindValue(':days', $days, PDO::PARAM_INT);
+        
+        try {
+            $sql = "DELETE FROM logs_sistema WHERE data_criacao < DATE_SUB(NOW(), INTERVAL :days DAY)";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindValue(':days', $days, PDO::PARAM_INT);
 
-        if ($stmt->execute()) {
-            $removed = $stmt->rowCount();
-            logSystemAction(
-                $_SESSION['user_id'] ?? 0,
-                'Limpeza de logs realizada',
-                'logs_sistema',
-                null,
-                null,
-                [
-                    'removed' => $removed,
-                    'days_threshold' => $days,
-                ]
-            );
-            return $removed;
+            if ($stmt->execute()) {
+                $removed = $stmt->rowCount();
+                
+                // Registrar a limpeza no log
+                if (function_exists('getCurrentUser') && isset($_SESSION['user_id'])) {
+                    LogService::recordLog(
+                        $_SESSION['user_id'],
+                        'Limpeza de logs realizada',
+                        'logs_sistema',
+                        null,
+                        null,
+                        null,
+                        [
+                            'removed' => $removed,
+                            'days_threshold' => $days,
+                        ]
+                    );
+                }
+                
+                return $removed;
+            }
+
+            return 0;
+        } catch (PDOException $e) {
+            error_log("Erro ao limpar logs: " . $e->getMessage());
+            return 0;
         }
-
-        return false;
     }
 
     private function buildFilters(array $filters): array
@@ -296,14 +379,18 @@ class LogsController
 
         $search = trim((string) ($filters['search'] ?? ''));
         if ($search !== '') {
-            $conditions[] = '(l.acao LIKE :search OR l.tabela_afetada LIKE :search OR u.nome_completo LIKE :search)';
+            $conditions[] = '(l.acao LIKE :search OR l.tabela_afetada LIKE :search OR u.nome_completo LIKE :search OR l.ip_address LIKE :search)';
             $params[':search'] = '%' . $search . '%';
         }
 
         $userId = trim((string) ($filters['user_id'] ?? ''));
         if ($userId !== '') {
-            $conditions[] = 'l.usuario_id = :user_id';
-            $params[':user_id'] = (int) $userId;
+            if ($userId === '0' || $userId === 'sistema') {
+                $conditions[] = 'l.usuario_id IS NULL';
+            } else {
+                $conditions[] = 'l.usuario_id = :user_id';
+                $params[':user_id'] = (int) $userId;
+            }
         }
 
         $action = trim((string) ($filters['action'] ?? ''));
@@ -361,19 +448,45 @@ class LogsController
             return null;
         }
 
-        $date = DateTime::createFromFormat('Y-m-d', $value);
-        return $date instanceof DateTime ? $date->format('Y-m-d') : null;
+        try {
+            $date = new DateTime($value);
+            return $date->format('Y-m-d');
+        } catch (Exception $e) {
+            return null;
+        }
     }
 
     private function formatLogRow(array $row): array
     {
+        // Garantir que todos os campos existam
+        $row = array_merge([
+            'id' => null,
+            'usuario_id' => null,
+            'acao' => '',
+            'tabela_afetada' => null,
+            'registro_id' => null,
+            'dados_anteriores' => null,
+            'dados_novos' => null,
+            'ip_address' => null,
+            'data_criacao' => null,
+            'usuario_nome' => null
+        ], $row);
+
+        // Formatar dados JSON
         $row['dados_anteriores'] = $this->formatJsonString($row['dados_anteriores']);
         $row['dados_novos'] = $this->formatJsonString($row['dados_novos']);
-        $row['usuario_nome'] = $row['usuario_nome'] ?? null;
 
+        // Garantir que o nome do usuário seja string ou null
+        $row['usuario_nome'] = $row['usuario_nome'] ?: null;
+
+        // Formatar data
         if (!empty($row['data_criacao'])) {
-            $date = new DateTime($row['data_criacao']);
-            $row['data_criacao'] = $date->format('Y-m-d H:i:s');
+            try {
+                $date = new DateTime($row['data_criacao']);
+                $row['data_criacao'] = $date->format('Y-m-d H:i:s');
+            } catch (Exception $e) {
+                // Manter o valor original se não conseguir formatar
+            }
         }
 
         return $row;
@@ -391,5 +504,118 @@ class LogsController
         }
 
         return trim($payload);
+    }
+
+    /**
+     * Método para testar a conexão e estrutura da tabela
+     */
+    public function testConnection(): array
+    {
+        try {
+            // Testar conexão básica
+            $stmt = $this->conn->query("SELECT 1 as test");
+            $connectionOk = (bool) $stmt;
+
+            // Verificar se estamos no banco correto
+            $stmt = $this->conn->query("SELECT DATABASE() as current_db");
+            $currentDb = $stmt->fetchColumn();
+
+            // Verificar estrutura da tabela
+            $stmt = $this->conn->query("DESCRIBE logs_sistema");
+            $columns = $stmt->fetchAll();
+
+            // Contar registros total
+            $stmt = $this->conn->query("SELECT COUNT(*) FROM logs_sistema");
+            $totalRecords = $stmt->fetchColumn();
+
+            // Buscar registros recentes para teste
+            $stmt = $this->conn->query("
+                SELECT l.*, u.nome_completo AS usuario_nome 
+                FROM logs_sistema l 
+                LEFT JOIN usuarios u ON u.id = l.usuario_id 
+                ORDER BY l.id DESC 
+                LIMIT 5
+            ");
+            $sampleLogs = $stmt->fetchAll();
+
+            // Testar filtros básicos
+            $testFilters = $this->index('', '', '', '', '', '', 1, 5);
+
+            // Verificar se há logs de hoje
+            $stmt = $this->conn->query("
+                SELECT COUNT(*) FROM logs_sistema 
+                WHERE DATE(data_criacao) = CURDATE()
+            ");
+            $logsToday = $stmt->fetchColumn();
+
+            return [
+                'connection_ok' => $connectionOk,
+                'current_database' => $currentDb,
+                'columns' => $columns,
+                'total_records' => (int) $totalRecords,
+                'sample_logs' => $sampleLogs,
+                'test_filters_result' => $testFilters,
+                'logs_today' => (int) $logsToday,
+                'php_pdo_version' => $this->conn->getAttribute(PDO::ATTR_SERVER_VERSION),
+                'charset' => $this->conn->getAttribute(PDO::ATTR_CONNECTION_STATUS)
+            ];
+
+        } catch (PDOException $e) {
+            return [
+                'connection_ok' => false,
+                'error' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'columns' => [],
+                'total_records' => 0,
+                'sample_logs' => []
+            ];
+        }
+    }
+
+    /**
+     * Método específico para resetar/recriar logs se necessário
+     */
+    public function debugLogs(): array
+    {
+        try {
+            // Verificar se há logs
+            $stmt = $this->conn->query("SELECT COUNT(*) as total FROM logs_sistema");
+            $total = $stmt->fetchColumn();
+
+            // Pegar último log
+            $stmt = $this->conn->query("
+                SELECT l.*, u.nome_completo 
+                FROM logs_sistema l 
+                LEFT JOIN usuarios u ON u.id = l.usuario_id 
+                ORDER BY l.id DESC 
+                LIMIT 1
+            ");
+            $lastLog = $stmt->fetch();
+
+            // Testar query específica do sistema
+            $stmt = $this->conn->query("
+                SELECT 
+                    l.id, l.acao, l.data_criacao,
+                    COALESCE(u.nome_completo, 'Sistema') as usuario_nome
+                FROM logs_sistema l
+                LEFT JOIN usuarios u ON u.id = l.usuario_id
+                ORDER BY l.id DESC 
+                LIMIT 10
+            ");
+            $recentLogs = $stmt->fetchAll();
+
+            return [
+                'total_logs' => (int) $total,
+                'last_log' => $lastLog,
+                'recent_logs' => $recentLogs,
+                'connection_status' => 'OK'
+            ];
+
+        } catch (Exception $e) {
+            return [
+                'error' => $e->getMessage(),
+                'connection_status' => 'ERROR'
+            ];
+        }
     }
 }
