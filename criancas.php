@@ -359,6 +359,12 @@ $currentPage = $result['current_page'];
                         <?php 
                         $isAniversario = date('m-d') === date('m-d', strtotime($crianca['data_nascimento']));
                         $temAlergia = !empty($crianca['alergia_alimentos']) || !empty($crianca['alergia_medicamentos']);
+
+                        $criancaJson = htmlspecialchars(json_encode($crianca, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+
+                        $statusAtivo = !empty($crianca['ativo']);
+
+                        $nomeSeguro = htmlspecialchars($crianca['nome_completo'], ENT_QUOTES, 'UTF-8');
                         ?>
                         <div class="col-lg-6 col-xl-4 mb-4">
                             <div class="card crianca-card h-100">
@@ -381,30 +387,25 @@ $currentPage = $result['current_page'];
                                                         <?php echo $crianca['idade']; ?> anos • <?php echo $crianca['sexo']; ?>
                                                     </p>
                                                 </div>
-                                                <div class="dropdown">
-                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                                                            type="button" data-bs-toggle="dropdown">
-                                                        <i class="fas fa-ellipsis-v"></i>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <button type="button" class="btn btn-outline-primary" title="Ver detalhes" data-bs-toggle="modal" data-bs-target="#detailsModal" data-crianca="<?php echo $criancaJson; ?>">
+                                                        <i class="fas fa-eye"></i>
                                                     </button>
-                                                    <ul class="dropdown-menu">
-                                                        <li><a class="dropdown-item" href="#" onclick="viewCrianca(<?php echo htmlspecialchars(json_encode($crianca)); ?>)">
-                                                            <i class="fas fa-eye me-2"></i>Ver Detalhes</a></li>
-                                                        <?php if (hasPermission('coordenador') || hasPermission('administrador')): ?>
-                                                        <li><a class="dropdown-item" href="#" onclick="editCrianca(<?php echo htmlspecialchars(json_encode($crianca)); ?>)">
-                                                            <i class="fas fa-edit me-2"></i>Editar</a></li>
-                                                        <li><hr class="dropdown-divider"></li>
-                                                        <li><a class="dropdown-item" href="#" onclick="toggleStatus(<?php echo $crianca['id']; ?>, '<?php echo $crianca['ativo'] ? 'desativar' : 'ativar'; ?>')">
-                                                            <i class="fas fa-<?php echo $crianca['ativo'] ? 'ban' : 'check'; ?> me-2"></i>
-                                                            <?php echo $crianca['ativo'] ? 'Desativar' : 'Ativar'; ?></a></li>
-                                                        <?php endif; ?>
-                                                        <?php if (hasPermission('administrador')): ?>
-                                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteCrianca(<?php echo $crianca['id']; ?>, '<?php echo htmlspecialchars($crianca['nome_completo']); ?>')">
-                                                            <i class="fas fa-trash me-2"></i>Excluir</a></li>
-                                                        <?php endif; ?>
-                                                    </ul>
+                                                    <?php if (hasPermission('coordenador') || hasPermission('administrador')): ?>
+                                                    <button type="button" class="btn btn-outline-secondary" title="Editar cadastro" data-bs-toggle="modal" data-bs-target="#editModal" data-crianca="<?php echo $criancaJson; ?>">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-warning" title="<?php echo $statusAtivo ? 'Desativar' : 'Ativar'; ?> crianca" data-bs-toggle="modal" data-bs-target="#statusModal" data-id="<?php echo (int) $crianca['id']; ?>" data-nome="<?php echo $nomeSeguro; ?>" data-ativo="<?php echo $statusAtivo ? '1' : '0'; ?>">
+                                                        <i class="fas fa-<?php echo $statusAtivo ? 'ban' : 'check'; ?>"></i>
+                                                    </button>
+                                                    <?php endif; ?>
+                                                    <?php if (hasPermission('administrador')): ?>
+                                                    <button type="button" class="btn btn-outline-danger" title="Excluir cadastro" data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="<?php echo (int) $crianca['id']; ?>" data-nome="<?php echo $nomeSeguro; ?>">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
-                                            
                                             <div class="mb-2">
                                                 <small class="text-muted">
                                                     <i class="fas fa-user me-1"></i>
@@ -530,6 +531,28 @@ $currentPage = $result['current_page'];
         </div>
     </div>
     
+    <!-- Modal de Status -->
+    <div class="modal fade" id="statusModal" tabindex="-1">
+        <div class="modal-dialog">
+            <form class="modal-content" method="POST">
+                <input type="hidden" name="action" value="toggle_status">
+                <input type="hidden" id="statusCriancaId" name="id">
+                <div class="modal-header">
+                    <h5 class="modal-title">Alterar status</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Deseja <span id="statusActionLabel"></span> o cadastro de <strong id="statusCriancaNome"></strong>?</p>
+                    <p class="text-muted small mb-0">Esta operacao pode ser revertida a qualquer momento.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success" id="statusConfirmButton">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal de Confirmação de Exclusão -->
     <div class="modal fade" id="deleteModal" tabindex="-1">
         <div class="modal-dialog">
@@ -555,87 +578,178 @@ $currentPage = $result['current_page'];
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    
     <script>
-        function viewCrianca(crianca) {
-            const content = `
+        document.addEventListener('DOMContentLoaded', function () {
+            function parseCrianca(button) {
+                var payload = button.getAttribute('data-crianca');
+                if (!payload) {
+                    return null;
+                }
+                try {
+                    return JSON.parse(payload);
+                } catch (error) {
+                    console.error('Erro ao converter dados da crianca', error);
+                    return null;
+                }
+            }
+
+            function formatDate(value) {
+                if (!value) {
+                    return '-';
+                }
+                var date = new Date(value);
+                if (Number.isNaN(date.getTime())) {
+                    return value;
+                }
+                return date.toLocaleDateString('pt-BR');
+            }
+
+            function formatDateTime(value) {
+                if (!value) {
+                    return '-';
+                }
+                var date = new Date(value);
+                if (Number.isNaN(date.getTime())) {
+                    return value;
+                }
+                return date.toLocaleString('pt-BR');
+            }
+
+            var detailsModal = document.getElementById('detailsModal');
+            if (detailsModal) {
+                detailsModal.addEventListener('show.bs.modal', function (event) {
+                    var button = event.relatedTarget;
+                    if (!button) {
+                        return;
+                    }
+                    var crianca = parseCrianca(button);
+                    if (!crianca) {
+                        return;
+                    }
+                    var content = `
                 <div class="row">
                     <div class="col-md-6">
-                        <h6>Dados da Criança</h6>
-                        <p><strong>Nome:</strong> ${crianca.nome_completo}</p>
-                        <p><strong>Data de Nascimento:</strong> ${new Date(crianca.data_nascimento).toLocaleDateString('pt-BR')}</p>
-                        <p><strong>Idade:</strong> ${crianca.idade} anos</p>
-                        <p><strong>Sexo:</strong> ${crianca.sexo}</p>
-                        
-                        ${crianca.alergia_alimentos ? `<p><strong>Alergia a Alimentos:</strong> <span class="text-danger">${crianca.alergia_alimentos}</span></p>` : ''}
-                        ${crianca.alergia_medicamentos ? `<p><strong>Alergia a Medicamentos:</strong> <span class="text-danger">${crianca.alergia_medicamentos}</span></p>` : ''}
-                        ${crianca.restricoes_alimentares ? `<p><strong>Restrições Alimentares:</strong> ${crianca.restricoes_alimentares}</p>` : ''}
-                        ${crianca.observacoes_saude ? `<p><strong>Observações de Saúde:</strong> ${crianca.observacoes_saude}</p>` : ''}
+                        <h6>Dados da Crianca</h6>
+                        <p><strong>Nome:</strong> ${crianca.nome_completo || '-'}</p>
+                        <p><strong>Data de nascimento:</strong> ${formatDate(crianca.data_nascimento)}</p>
+                        <p><strong>Idade:</strong> ${crianca.idade || '-'} anos</p>
+                        <p><strong>Sexo:</strong> ${crianca.sexo || '-'}</p>
+                        ${crianca.alergia_alimentos ? `<p><strong>Alergia a alimentos:</strong> <span class="text-danger">${crianca.alergia_alimentos}</span></p>` : ``}
+                        ${crianca.alergia_medicamentos ? `<p><strong>Alergia a medicamentos:</strong> <span class="text-danger">${crianca.alergia_medicamentos}</span></p>` : ``}
+                        ${crianca.restricoes_alimentares ? `<p><strong>Restricoes alimentares:</strong> ${crianca.restricoes_alimentares}</p>` : ``}
+                        ${crianca.observacoes_saude ? `<p><strong>Observacoes de saude:</strong> ${crianca.observacoes_saude}</p>` : ``}
                     </div>
                     <div class="col-md-6">
-                        <h6>Dados do Responsável</h6>
-                        <p><strong>Nome:</strong> ${crianca.nome_responsavel}</p>
-                        <p><strong>Grau de Parentesco:</strong> ${crianca.grau_parentesco}</p>
-                        <p><strong>Telefone:</strong> ${crianca.telefone_principal}</p>
-                        ${crianca.telefone_alternativo ? `<p><strong>Telefone Alternativo:</strong> ${crianca.telefone_alternativo}</p>` : ''}
-                        <p><strong>Endereço:</strong> ${crianca.endereco_completo}</p>
-                        <p><strong>Documento:</strong> ${crianca.documento_rg_cpf}</p>
-                        ${crianca.email_responsavel ? `<p><strong>E-mail:</strong> ${crianca.email_responsavel}</p>` : ''}
-                        
-                        <h6 class="mt-3">Contato de Emergência</h6>
-                        <p><strong>Nome:</strong> ${crianca.nome_emergencia}</p>
-                        <p><strong>Telefone:</strong> ${crianca.telefone_emergencia}</p>
-                        <p><strong>Parentesco:</strong> ${crianca.grau_parentesco_emergencia}</p>
-                        <p><strong>Autorização para Retirada:</strong> ${crianca.autorizacao_retirada}</p>
+                        <h6>Dados do responsavel</h6>
+                        <p><strong>Nome:</strong> ${crianca.nome_responsavel || '-'}</p>
+                        <p><strong>Grau de parentesco:</strong> ${crianca.grau_parentesco || '-'}</p>
+                        <p><strong>Telefone principal:</strong> ${crianca.telefone_principal || '-'}</p>
+                        ${crianca.telefone_alternativo ? `<p><strong>Telefone alternativo:</strong> ${crianca.telefone_alternativo}</p>` : ``}
+                        <p><strong>Endereco:</strong> ${crianca.endereco_completo || '-'}</p>
+                        <p><strong>Documento:</strong> ${crianca.documento_rg_cpf || '-'}</p>
+                        ${crianca.email_responsavel ? `<p><strong>E-mail:</strong> ${crianca.email_responsavel}</p>` : ``}
+                        <h6 class="mt-3">Contato de emergencia</h6>
+                        <p><strong>Nome:</strong> ${crianca.nome_emergencia || '-'}</p>
+                        <p><strong>Telefone:</strong> ${crianca.telefone_emergencia || '-'}</p>
+                        <p><strong>Parentesco:</strong> ${crianca.grau_parentesco_emergencia || '-'}</p>
+                        <p><strong>Autorizacao para retirada:</strong> ${crianca.autorizacao_retirada || '-'}</p>
                     </div>
                 </div>
                 <div class="mt-3">
                     <small class="text-muted">
-                        Cadastrado em: ${new Date(crianca.data_cadastro).toLocaleString('pt-BR')}<br>
-                        Última atualização: ${new Date(crianca.data_atualizacao).toLocaleString('pt-BR')}
+                        Cadastrado em: ${formatDateTime(crianca.data_cadastro)}<br>
+                        Ultima atualizacao: ${formatDateTime(crianca.data_atualizacao)}
                     </small>
                 </div>
             `;
-            
-            document.getElementById('detailsContent').innerHTML = content;
-            new bootstrap.Modal(document.getElementById('detailsModal')).show();
-        }
-        
-        function editCrianca(crianca) {
-            document.getElementById('editId').value = crianca.id;
-            document.getElementById('editNome').value = crianca.nome_completo;
-            document.getElementById('editDataNascimento').value = crianca.data_nascimento;
-            document.getElementById('editSexo').value = crianca.sexo;
-            document.getElementById('editAlergiaAlimentos').value = crianca.alergia_alimentos || '';
-            document.getElementById('editAlergiaMedicamentos').value = crianca.alergia_medicamentos || '';
-            document.getElementById('editResponsavel').value = crianca.nome_responsavel;
-            document.getElementById('editTelefone').value = crianca.telefone_principal;
-            document.getElementById('editEmergencia').value = crianca.nome_emergencia;
-            
-            new bootstrap.Modal(document.getElementById('editModal')).show();
-        }
-        
-        function deleteCrianca(id, nome) {
-            document.getElementById('deleteCriancaId').value = id;
-            document.getElementById('deleteCriancaName').textContent = nome;
-            new bootstrap.Modal(document.getElementById('deleteModal')).show();
-        }
-        
-        function toggleStatus(id, action) {
-            if (confirm(`Tem certeza que deseja ${action} esta criança?`)) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.innerHTML = `
-                    <input type="hidden" name="action" value="toggle_status">
-                    <input type="hidden" name="id" value="${id}">
-                `;
-                document.body.appendChild(form);
-                form.submit();
+                    detailsModal.querySelector('#detailsContent').innerHTML = content;
+                });
             }
-        }
-        
-        // Máscara para telefone
+
+            var editModal = document.getElementById('editModal');
+            if (editModal) {
+                editModal.addEventListener('show.bs.modal', function (event) {
+                    var button = event.relatedTarget;
+                    if (!button) {
+                        return;
+                    }
+                    var crianca = parseCrianca(button);
+                    if (!crianca) {
+                        return;
+                    }
+                    var fieldId = editModal.querySelector('#editId');
+                    if (fieldId) { fieldId.value = crianca.id || ''; }
+                    var fieldResponsavel = editModal.querySelector('#editResponsavel');
+                    if (fieldResponsavel) { fieldResponsavel.value = crianca.nome_responsavel || ''; }
+                    var fieldTelefone = editModal.querySelector('#editTelefone');
+                    if (fieldTelefone) { fieldTelefone.value = crianca.telefone_principal || ''; }
+                    var fieldEmergencia = editModal.querySelector('#editEmergencia');
+                    if (fieldEmergencia) { fieldEmergencia.value = crianca.nome_emergencia || ''; }
+                });
+            }
+
+            var deleteModal = document.getElementById('deleteModal');
+            if (deleteModal) {
+                deleteModal.addEventListener('show.bs.modal', function (event) {
+                    var button = event.relatedTarget;
+                    if (!button) {
+                        return;
+                    }
+                    var idField = deleteModal.querySelector('#deleteCriancaId');
+                    if (idField) { idField.value = button.getAttribute('data-id') || ''; }
+                    var nameField = deleteModal.querySelector('#deleteCriancaName');
+                    if (nameField) { nameField.textContent = button.getAttribute('data-nome') || ''; }
+                });
+            }
+
+            var statusModal = document.getElementById('statusModal');
+            if (statusModal) {
+                statusModal.addEventListener('show.bs.modal', function (event) {
+                    var button = event.relatedTarget;
+                    if (!button) {
+                        return;
+                    }
+                    var ativo = button.getAttribute('data-ativo') === '1';
+                    var idField = statusModal.querySelector('#statusCriancaId');
+                    if (idField) { idField.value = button.getAttribute('data-id') || ''; }
+                    var nameField = statusModal.querySelector('#statusCriancaNome');
+                    if (nameField) { nameField.textContent = button.getAttribute('data-nome') || ''; }
+                    var actionLabel = statusModal.querySelector('#statusActionLabel');
+                    if (actionLabel) { actionLabel.textContent = ativo ? 'desativar' : 'ativar'; }
+                    var confirmBtn = statusModal.querySelector('#statusConfirmButton');
+                    if (confirmBtn) {
+                        confirmBtn.textContent = ativo ? 'Desativar' : 'Ativar';
+                        confirmBtn.classList.toggle('btn-danger', ativo);
+                        confirmBtn.classList.toggle('btn-success', !ativo);
+                    }
+                });
+            }
+
+            var editTelefone = document.getElementById('editTelefone');
+            if (editTelefone) {
+                editTelefone.addEventListener('input', function () {
+                    formatPhone(this);
+                });
+            }
+
+            var editDataNascimento = document.getElementById('editDataNascimento');
+            if (editDataNascimento) {
+                editDataNascimento.addEventListener('change', function () {
+                    var birthDate = new Date(this.value);
+                    var today = new Date();
+                    var age = today.getFullYear() - birthDate.getFullYear();
+                    if (age > 12) {
+                        alert('Este sistema e destinado a criancas ate 12 anos.');
+                    } else if (age < 1) {
+                        alert('A crianca deve ter pelo menos 1 ano.');
+                    }
+                });
+            }
+        });
+
         function formatPhone(input) {
-            let value = input.value.replace(/\D/g, '');
+            var value = input.value.replace(/\D/g, '');
             if (value.length >= 11) {
                 value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
             } else if (value.length >= 7) {
@@ -645,23 +759,7 @@ $currentPage = $result['current_page'];
             }
             input.value = value;
         }
-        
-        document.getElementById('editTelefone').addEventListener('input', function() {
-            formatPhone(this);
-        });
-        
-        // Calcular idade automaticamente
-        document.getElementById('editDataNascimento').addEventListener('change', function() {
-            const birthDate = new Date(this.value);
-            const today = new Date();
-            const age = today.getFullYear() - birthDate.getFullYear();
-            
-            if (age > 12) {
-                alert('Este sistema é destinado a crianças até 12 anos.');
-            } else if (age < 1) {
-                alert('A criança deve ter pelo menos 1 ano.');
-            }
-        });
     </script>
+
 </body>
 </html>

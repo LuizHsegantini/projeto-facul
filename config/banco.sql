@@ -48,14 +48,15 @@ CREATE TABLE IF NOT EXISTS `criancas_cadastro` (
   KEY `idx_nome` (`nome_completo`),
   KEY `idx_idade` (`idade`),
   KEY `idx_data_nascimento` (`data_nascimento`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela sistema_projetos.criancas_cadastro: ~3 rows (aproximadamente)
+-- Copiando dados para a tabela sistema_projetos.criancas_cadastro: ~5 rows (aproximadamente)
 INSERT INTO `criancas_cadastro` (`id`, `nome_completo`, `data_nascimento`, `idade`, `sexo`, `alergia_alimentos`, `alergia_medicamentos`, `restricoes_alimentares`, `observacoes_saude`, `nome_responsavel`, `grau_parentesco`, `telefone_principal`, `telefone_alternativo`, `endereco_completo`, `documento_rg_cpf`, `email_responsavel`, `nome_emergencia`, `telefone_emergencia`, `grau_parentesco_emergencia`, `autorizacao_retirada`, `data_cadastro`, `data_atualizacao`, `ativo`) VALUES
 	(1, 'Gabriel Silva Santos', '2018-03-15', 6, 'Masculino', 'Amendoim', NULL, 'Sem glúten', 'Criança ativa, gosta de futebol', 'Ana Silva Santos', 'Mãe', '(11) 98765-4321', NULL, 'Rua das Flores, 123 - Vila Esperança, São Paulo - SP - 05678-900', '123.456.789-00', NULL, 'Carlos Silva Santos', '(11) 99876-5432', 'Pai', 'Sim', '2025-09-17 23:39:20', '2025-09-17 23:39:20', 1),
 	(2, 'Sofia Oliveira Costa', '2017-08-22', 7, 'Feminino', '', NULL, 'Vegetariana', 'Usa óculos, muito criativa', 'Mariana Oliveira Costa', 'Mãe', '(11) 94567-8901', NULL, 'Av. Paulista, 500 - Bela Vista, São Paulo - SP - 01310-100', '987.654.321-11', NULL, 'Roberto Costa Lima', '(11) 93456-7890', 'Avô', 'Sim', '2025-09-17 23:39:20', '2025-09-17 23:39:20', 1),
 	(3, 'Lucas Ferreira Lima', '2019-01-10', 5, 'Masculino', 'Leite, Ovos', NULL, 'Intolerante à lactose', 'Alérgico, sempre levar medicação', 'Patricia Ferreira Lima', 'Mãe', '(11) 92345-6789', NULL, 'Rua do Sol, 789 - Jardim América, São Paulo - SP - 04567-123', '456.789.123-22', NULL, 'João Ferreira Santos', '(11) 91234-5678', 'Tio', 'Não', '2025-09-17 23:39:20', '2025-09-17 23:39:20', 1),
-	(4, 'Luiz henrique Segantini', '2018-01-18', 7, 'Masculino', 'Leite, Ovo e Churrasco', 'não', 'não', 'Oculos', 'Luiza Prado Claro', 'Pai', '(98) 08319-83111', '(10) 21902-890192091', 'jdjadijaikdjiad', '538948303843', 'kjaidhjidh@gmail.com', 'qadadada', '(11) 21212-1212', '12adadad', 'Sim', '2025-09-17 23:41:41', '2025-09-17 23:41:41', 1);
+	(4, 'Luiz henrique Segantini', '2018-01-18', 7, 'Masculino', 'Leite, Ovo e Churrasco', 'não', 'não', 'Oculos', 'Luiza Prado Claro', 'Pai', '(98) 08319-83111', '(10) 21902-890192091', 'jdjadijaikdjiad', '538948303843', 'kjaidhjidh@gmail.com', 'qadadada', '(11) 21212-1212', '12adadad', 'Sim', '2025-09-17 23:41:41', '2025-09-17 23:41:41', 1),
+	(6, 'adad', '2024-02-16', 1, 'Feminino', '', '', '', '', 'adad', 'Mãe', '(12) 1212-1212', '(12) 12112-121212', '121212', 'ada', 'adadad@gmail.com', 'adadadad', '(15) 45485-7487878', 'ada', 'Sim', '2025-09-18 01:57:34', '2025-09-18 01:58:27', 0);
 
 -- Copiando estrutura para tabela sistema_projetos.equipes
 CREATE TABLE IF NOT EXISTS `equipes` (
@@ -74,7 +75,7 @@ INSERT INTO `equipes` (`id`, `nome`, `especialidade`, `capacidade_eventos`, `des
 	(1, 'Equipe de Animação', 'Animação', 1, 'Responsável pela animação e entretenimento das crianças', '2025-09-16 22:21:40', '2025-09-17 23:39:20'),
 	(2, 'Equipe de Recreação', 'Recreação', 1, 'Responsável pelas atividades recreativas e brincadeiras', '2025-09-16 22:21:40', '2025-09-17 23:39:20'),
 	(3, 'Equipe de Segurança', 'Segurança', 1, 'Responsável pela segurança e bem-estar das crianças', '2025-09-16 22:21:40', '2025-09-17 23:39:20'),
-	(4, 'Equipe de Arte e Criatividade', 'Arte', 1, 'Responsável por oficinas de arte e atividades criativas', '2025-09-16 22:21:40', '2025-09-17 23:39:20'),
+	(4, 'Equipe de Arte e Criatividade', 'Arte', 5, 'Responsável por oficinas de arte e atividades criativas', '2025-09-16 22:21:40', '2025-09-18 02:00:41'),
 	(5, 'Equipe de Culinária', 'Culinária', 1, 'Responsável pela alimentação e lanches das crianças', '2025-09-16 22:21:40', '2025-09-17 23:39:20');
 
 -- Copiando estrutura para tabela sistema_projetos.equipe_membros
@@ -88,20 +89,20 @@ CREATE TABLE IF NOT EXISTS `equipe_membros` (
   KEY `usuario_id` (`usuario_id`),
   CONSTRAINT `equipe_membros_ibfk_1` FOREIGN KEY (`equipe_id`) REFERENCES `equipes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `equipe_membros_ibfk_2` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela sistema_projetos.equipe_membros: ~9 rows (aproximadamente)
+-- Copiando dados para a tabela sistema_projetos.equipe_membros: ~10 rows (aproximadamente)
 INSERT INTO `equipe_membros` (`id`, `equipe_id`, `usuario_id`, `data_entrada`) VALUES
 	(1, 1, 3, '2025-09-16 22:21:40'),
 	(2, 1, 4, '2025-09-16 22:21:40'),
 	(4, 2, 5, '2025-09-16 22:21:40'),
 	(5, 3, 4, '2025-09-16 22:21:40'),
-	(6, 4, 5, '2025-09-16 22:21:40'),
 	(7, 5, 3, '2025-09-16 22:21:40'),
 	(8, 5, 4, '2025-09-16 22:21:40'),
 	(11, 1, 5, '2025-09-16 23:15:16'),
 	(12, 1, 1, '2025-09-16 23:18:22'),
-	(18, 2, 1, '2025-09-17 01:09:59');
+	(18, 2, 1, '2025-09-17 01:09:59'),
+	(19, 4, 1, '2025-09-18 02:00:34');
 
 -- Copiando estrutura para tabela sistema_projetos.eventos
 CREATE TABLE IF NOT EXISTS `eventos` (
@@ -123,16 +124,14 @@ CREATE TABLE IF NOT EXISTS `eventos` (
   PRIMARY KEY (`id`),
   KEY `gerente_id` (`coordenador_id`),
   CONSTRAINT `eventos_ibfk_1` FOREIGN KEY (`coordenador_id`) REFERENCES `usuarios` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela sistema_projetos.eventos: ~6 rows (aproximadamente)
+-- Copiando dados para a tabela sistema_projetos.eventos: ~4 rows (aproximadamente)
 INSERT INTO `eventos` (`id`, `nome`, `tipo_evento`, `faixa_etaria_min`, `faixa_etaria_max`, `capacidade_maxima`, `local_evento`, `duracao_horas`, `descricao`, `data_inicio`, `data_fim_evento`, `status`, `coordenador_id`, `data_criacao`, `data_atualizacao`) VALUES
 	(1, 'Festa Super-Heróis', 'Festa Infantil', 5, 10, 30, 'Salão de Festas - Shopping Center', 4.0, 'Festa temática com super-heróis para crianças de 5 a 10 anos', '2024-01-15', '2024-06-30', 'em_andamento', 2, '2025-09-16 22:21:40', '2025-09-17 23:39:20'),
 	(2, 'Acampamento Aventura', 'Acampamento', 8, 12, 20, 'Sítio Natureza - Zona Rural', 48.0, 'Acampamento de fim de semana com atividades ao ar livre', '2024-02-01', '2024-05-15', 'em_andamento', 2, '2025-09-16 22:21:40', '2025-09-17 23:39:20'),
-	(3, 'Workshop de Arte', 'Workshop', 6, 11, 15, 'Ateliê Kids - Centro Cultural', 3.0, 'Oficina de pintura e artesanato para desenvolvimento criativo', '2024-03-01', '2024-08-30', 'planejado', 2, '2025-09-16 22:21:40', '2025-09-17 23:39:20'),
-	(4, 'Sistema de CRM', 'Festa Infantil', 3, 12, 50, NULL, 4.0, 'Customer Relationship Management personalizado', '2023-11-01', '2024-02-28', 'concluido', 2, '2025-09-16 22:21:40', '2025-09-16 22:21:40'),
-	(5, 'Portal do Cliente', 'Festa Infantil', 3, 12, 50, NULL, 4.0, 'Portal web para atendimento ao cliente', '2024-01-10', '2024-04-10', 'cancelado', 2, '2025-09-16 22:21:40', '2025-09-16 22:21:40'),
-	(7, 'Teste', 'Festa Infantil', 3, 12, 50, NULL, 4.0, 'caadad', '2023-05-15', '2025-09-27', 'em_andamento', 2, '2025-09-17 01:07:57', '2025-09-17 01:08:20');
+	(3, 'Workshop de Arte', 'Workshop', 6, 11, 15, 'Ateliê Kids - Centro Cultural', 3.0, 'Oficina de pintura e artesanato para desenvolvimento criativo', '2024-03-01', '0000-00-00', 'planejado', 2, '2025-09-16 22:21:40', '2025-09-18 00:06:13'),
+	(8, 'Churrasco', '', 2, 15, 5, 'Salão principal', 5.0, 'Teste', '2025-09-19', '0000-00-00', 'planejado', 2, '2025-09-18 01:56:45', '2025-09-18 01:58:17');
 
 -- Copiando estrutura para tabela sistema_projetos.evento_criancas
 CREATE TABLE IF NOT EXISTS `evento_criancas` (
@@ -156,15 +155,17 @@ CREATE TABLE IF NOT EXISTS `evento_criancas` (
   CONSTRAINT `evento_criancas_checkout_fk` FOREIGN KEY (`usuario_checkout`) REFERENCES `usuarios` (`id`),
   CONSTRAINT `evento_criancas_crianca_fk` FOREIGN KEY (`crianca_id`) REFERENCES `criancas_cadastro` (`id`) ON DELETE CASCADE,
   CONSTRAINT `evento_criancas_evento_fk` FOREIGN KEY (`evento_id`) REFERENCES `eventos` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela sistema_projetos.evento_criancas: ~5 rows (aproximadamente)
+-- Copiando dados para a tabela sistema_projetos.evento_criancas: ~7 rows (aproximadamente)
 INSERT INTO `evento_criancas` (`id`, `evento_id`, `crianca_id`, `status_participacao`, `data_inscricao`, `data_checkin`, `data_checkout`, `observacoes`, `usuario_checkin`, `usuario_checkout`) VALUES
 	(1, 1, 1, 'Confirmado', '2025-09-17 23:39:20', NULL, NULL, NULL, NULL, NULL),
 	(2, 1, 2, 'Inscrito', '2025-09-17 23:39:20', NULL, NULL, NULL, NULL, NULL),
 	(3, 2, 1, 'Inscrito', '2025-09-17 23:39:20', NULL, NULL, NULL, NULL, NULL),
-	(4, 3, 2, 'Check-in', '2025-09-17 23:39:20', '2025-09-17 23:59:09', NULL, NULL, 1, NULL),
-	(5, 3, 3, 'Inscrito', '2025-09-17 23:39:20', NULL, NULL, NULL, NULL, NULL);
+	(4, 3, 2, 'Check-out', '2025-09-17 23:39:20', '2025-09-18 00:00:01', '2025-09-18 00:00:03', NULL, 1, 1),
+	(5, 3, 3, 'Check-in', '2025-09-17 23:39:20', '2025-09-18 00:06:29', NULL, NULL, 1, NULL),
+	(6, 3, 4, 'Check-in', '2025-09-18 00:17:28', '2025-09-18 00:46:58', NULL, '', 1, NULL),
+	(7, 8, 6, 'Inscrito', '2025-09-18 01:57:44', NULL, NULL, '', NULL, NULL);
 
 -- Copiando estrutura para tabela sistema_projetos.evento_equipes
 CREATE TABLE IF NOT EXISTS `evento_equipes` (
@@ -179,7 +180,7 @@ CREATE TABLE IF NOT EXISTS `evento_equipes` (
   CONSTRAINT `evento_equipes_ibfk_2` FOREIGN KEY (`equipe_id`) REFERENCES `equipes` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela sistema_projetos.evento_equipes: ~13 rows (aproximadamente)
+-- Copiando dados para a tabela sistema_projetos.evento_equipes: ~8 rows (aproximadamente)
 INSERT INTO `evento_equipes` (`id`, `evento_id`, `equipe_id`, `data_atribuicao`) VALUES
 	(2, 1, 2, '2025-09-16 22:21:40'),
 	(3, 1, 4, '2025-09-16 22:21:40'),
@@ -188,12 +189,7 @@ INSERT INTO `evento_equipes` (`id`, `evento_id`, `equipe_id`, `data_atribuicao`)
 	(6, 2, 2, '2025-09-16 22:21:40'),
 	(7, 2, 4, '2025-09-16 22:21:40'),
 	(8, 3, 3, '2025-09-16 22:21:40'),
-	(9, 4, 2, '2025-09-16 22:21:40'),
-	(10, 4, 5, '2025-09-16 22:21:40'),
-	(11, 5, 1, '2025-09-16 22:21:40'),
-	(12, 5, 4, '2025-09-16 22:21:40'),
-	(13, 1, 3, '2025-09-16 22:47:34'),
-	(15, 7, 2, '2025-09-17 01:08:45');
+	(13, 1, 3, '2025-09-16 22:47:34');
 
 -- Copiando estrutura para tabela sistema_projetos.historico_participacao
 CREATE TABLE IF NOT EXISTS `historico_participacao` (
@@ -229,9 +225,9 @@ CREATE TABLE IF NOT EXISTS `logs_sistema` (
   PRIMARY KEY (`id`),
   KEY `usuario_id` (`usuario_id`),
   CONSTRAINT `logs_sistema_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=64 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=98 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela sistema_projetos.logs_sistema: ~55 rows (aproximadamente)
+-- Copiando dados para a tabela sistema_projetos.logs_sistema: ~97 rows (aproximadamente)
 INSERT INTO `logs_sistema` (`id`, `usuario_id`, `acao`, `tabela_afetada`, `registro_id`, `dados_anteriores`, `dados_novos`, `ip_address`, `data_criacao`) VALUES
 	(1, 1, 'Login realizado', NULL, NULL, NULL, NULL, '192.168.1.100', '2025-09-16 22:21:40'),
 	(2, 2, 'Login realizado', NULL, NULL, NULL, NULL, '192.168.1.101', '2025-09-16 22:21:40'),
@@ -295,7 +291,41 @@ INSERT INTO `logs_sistema` (`id`, `usuario_id`, `acao`, `tabela_afetada`, `regis
 	(60, 1, 'Logout realizado', NULL, NULL, NULL, NULL, '::1', '2025-09-17 01:22:45'),
 	(61, 1, 'Login realizado', NULL, NULL, NULL, NULL, '::1', '2025-09-17 23:43:56'),
 	(62, 1, 'Logout realizado', NULL, NULL, NULL, NULL, '::1', '2025-09-17 23:45:43'),
-	(63, 1, 'Login realizado', NULL, NULL, NULL, NULL, '::1', '2025-09-17 23:46:18');
+	(63, 1, 'Login realizado', NULL, NULL, NULL, NULL, '::1', '2025-09-17 23:46:18'),
+	(64, 1, 'Check-in realizado', 'evento_criancas', NULL, NULL, '{"evento_id":"3","crianca_id":"2"}', '::1', '2025-09-18 00:00:01'),
+	(65, 1, 'Check-out realizado', 'evento_criancas', NULL, NULL, '{"evento_id":"3","crianca_id":"2"}', '::1', '2025-09-18 00:00:03'),
+	(66, 1, 'Evento atualizado', 'eventos', 3, '{"id":3,"nome":"Workshop de Arte","tipo_evento":"Workshop","faixa_etaria_min":6,"faixa_etaria_max":11,"capacidade_maxima":15,"local_evento":"Ateli\\u00ea Kids - Centro Cultural","duracao_horas":"3.0","descricao":"Oficina de pintura e artesanato para desenvolvimento criativo","data_inicio":"2024-03-01","data_fim_evento":"2024-08-30","status":"planejado","coordenador_id":2,"data_criacao":"2025-09-16 19:21:40","data_atualizacao":"2025-09-17 20:39:20","coordenador_nome":"Jo\\u00e3o Silva Santos"}', '{"action":"update","id":"3","nome":"Workshop de Arte","tipo_evento":"Workshop","coordenador_id":"2","descricao":"Oficina de pintura e artesanato para desenvolvimento criativo","data_inicio":"2024-03-01T00:00","duracao_horas":"3.0","faixa_etaria_min":"6","faixa_etaria_max":"11","capacidade_maxima":"15","local_evento":"Ateli\\u00ea Kids - Centro Cultural","status":"planejado","data_fim_evento":""}', '::1', '2025-09-18 00:06:13'),
+	(67, 1, 'Check-in realizado', 'evento_criancas', NULL, NULL, '{"evento_id":"3","crianca_id":"3"}', '::1', '2025-09-18 00:06:29'),
+	(68, 1, 'Criança adicionada ao evento', 'evento_criancas', NULL, NULL, '{"evento_id":"3","crianca_id":"4"}', '::1', '2025-09-18 00:17:28'),
+	(69, 1, 'Evento excluído', 'eventos', 5, '{"id":5,"nome":"Portal do Cliente","tipo_evento":"Festa Infantil","faixa_etaria_min":3,"faixa_etaria_max":12,"capacidade_maxima":50,"local_evento":null,"duracao_horas":"4.0","descricao":"Portal web para atendimento ao cliente","data_inicio":"2024-01-10","data_fim_evento":"2024-04-10","status":"cancelado","coordenador_id":2,"data_criacao":"2025-09-16 19:21:40","data_atualizacao":"2025-09-16 19:21:40","coordenador_nome":"Jo\\u00e3o Silva Santos"}', NULL, '::1', '2025-09-18 00:17:41'),
+	(70, 1, 'Evento excluído', 'eventos', 4, '{"id":4,"nome":"Sistema de CRM","tipo_evento":"Festa Infantil","faixa_etaria_min":3,"faixa_etaria_max":12,"capacidade_maxima":50,"local_evento":null,"duracao_horas":"4.0","descricao":"Customer Relationship Management personalizado","data_inicio":"2023-11-01","data_fim_evento":"2024-02-28","status":"concluido","coordenador_id":2,"data_criacao":"2025-09-16 19:21:40","data_atualizacao":"2025-09-16 19:21:40","coordenador_nome":"Jo\\u00e3o Silva Santos"}', NULL, '::1', '2025-09-18 00:17:45'),
+	(71, 1, 'Evento excluído', 'eventos', 7, '{"id":7,"nome":"Teste","tipo_evento":"Festa Infantil","faixa_etaria_min":3,"faixa_etaria_max":12,"capacidade_maxima":50,"local_evento":null,"duracao_horas":"4.0","descricao":"caadad","data_inicio":"2023-05-15","data_fim_evento":"2025-09-27","status":"em_andamento","coordenador_id":2,"data_criacao":"2025-09-16 22:07:57","data_atualizacao":"2025-09-16 22:08:20","coordenador_nome":"Jo\\u00e3o Silva Santos"}', NULL, '::1', '2025-09-18 00:17:50'),
+	(72, 1, 'Login realizado', NULL, NULL, NULL, NULL, '177.23.233.196', '2025-09-18 00:43:08'),
+	(73, 1, 'Check-in realizado', 'evento_criancas', NULL, NULL, '{"evento_id":"3","crianca_id":"4"}', '::1', '2025-09-18 00:46:59'),
+	(74, 1, 'Login realizado', NULL, NULL, NULL, NULL, '187.95.169.231', '2025-09-18 00:51:31'),
+	(75, 1, 'Logout realizado', NULL, NULL, NULL, NULL, '::1', '2025-09-18 00:52:53'),
+	(76, 3, 'Login realizado', NULL, NULL, NULL, NULL, '::1', '2025-09-18 00:53:38'),
+	(77, 3, 'Logout realizado', NULL, NULL, NULL, NULL, '::1', '2025-09-18 01:20:00'),
+	(78, 1, 'Login realizado', NULL, NULL, NULL, NULL, '::1', '2025-09-18 01:20:18'),
+	(79, 1, 'Logout realizado', NULL, NULL, NULL, NULL, '::1', '2025-09-18 01:29:14'),
+	(80, 1, 'Login realizado', NULL, NULL, NULL, NULL, '::1', '2025-09-18 01:29:37'),
+	(81, 1, 'Login realizado', NULL, NULL, NULL, NULL, '167.250.235.131', '2025-09-18 01:32:29'),
+	(82, 1, 'Funcionario atualizado', 'usuarios', 1, '{"id":1,"nome_completo":"Administrador do Sistema","cpf":"000.000.000-00","email":"admin@techcorp.com","cargo":"Administrador do Sistema","login":"admin","perfil":"administrador"}', '{"id":1,"nome_completo":"Luiz H Segantini","cpf":"000.000.000-00","email":"admin@techcorp.com","cargo":"Administrador do Sistema","login":"admin","perfil":"administrador","senha_atualizada":false}', '::1', '2025-09-18 01:39:23'),
+	(83, 1, 'Evento criado', 'eventos', 8, NULL, '{"action":"create","status":"planejado","nome":"Churrasco","tipo_evento":"Culin\\u00e1ria","coordenador_id":"1","descricao":"Teste","data_inicio":"2025-09-19T22:59","duracao_horas":"5","faixa_etaria_min":"2","faixa_etaria_max":"15","capacidade_maxima":"5","local_evento":"Sal\\u00e3o principal","data_fim_evento":""}', '::1', '2025-09-18 01:56:45'),
+	(84, 1, 'Criança adicionada ao evento', 'evento_criancas', NULL, NULL, '{"evento_id":"8","crianca_id":"6"}', '::1', '2025-09-18 01:57:44'),
+	(85, 1, 'Evento atualizado', 'eventos', 8, '{"id":8,"nome":"Churrasco","tipo_evento":"","faixa_etaria_min":2,"faixa_etaria_max":15,"capacidade_maxima":5,"local_evento":"Sal\\u00e3o principal","duracao_horas":"5.0","descricao":"Teste","data_inicio":"2025-09-19","data_fim_evento":"0000-00-00","status":"planejado","coordenador_id":1,"data_criacao":"2025-09-17 22:56:45","data_atualizacao":"2025-09-17 22:56:45","coordenador_nome":"Luiz H Segantini"}', '{"action":"update","id":"8","nome":"Churrasco","tipo_evento":"Festa de Anivers\\u00e1rio","coordenador_id":"2","descricao":"Teste","data_inicio":"2025-09-19T00:00","duracao_horas":"5.0","faixa_etaria_min":"2","faixa_etaria_max":"15","capacidade_maxima":"5","local_evento":"Sal\\u00e3o principal","status":"planejado","data_fim_evento":""}', '::1', '2025-09-18 01:58:17'),
+	(86, 1, 'Atividade removida', 'tarefas', 3, '{"id":3,"titulo":"Implementar API de produtos","tipo_atividade":"Recreação","descricao":"Criar endpoints para gestão de produtos","material_necessario":null,"publico_alvo":null,"evento_id":1,"responsavel_id":4,"status":"em_execucao","data_inicio":"2024-01-26","data_fim_prevista":"2024-02-05","data_fim_real":null,"data_criacao":"2025-09-16 19:21:40","data_atualizacao":"2025-09-16 19:21:40"}', NULL, '::1', '2025-09-18 01:59:08'),
+	(87, 1, 'Status da atividade atualizado', 'tarefas', 4, '{"id":4,"titulo":"Design da homepage","tipo_atividade":"Recreação","descricao":"Criar layout da página inicial","material_necessario":null,"publico_alvo":null,"evento_id":1,"responsavel_id":5,"status":"em_execucao","data_inicio":"2024-01-22","data_fim_prevista":"2024-02-01","data_fim_real":null,"data_criacao":"2025-09-16 19:21:40","data_atualizacao":"2025-09-16 19:21:40"}', '{"status":"pendente"}', '::1', '2025-09-18 01:59:12'),
+	(88, 1, 'Atividade removida', 'tarefas', 4, '{"id":4,"titulo":"Design da homepage","tipo_atividade":"Recreação","descricao":"Criar layout da página inicial","material_necessario":null,"publico_alvo":null,"evento_id":1,"responsavel_id":5,"status":"pendente","data_inicio":"2024-01-22","data_fim_prevista":"2024-02-01","data_fim_real":null,"data_criacao":"2025-09-16 19:21:40","data_atualizacao":"2025-09-17 22:59:12"}', NULL, '::1', '2025-09-18 01:59:15'),
+	(89, 1, 'Atividade removida', 'tarefas', 11, '{"id":11,"titulo":"adad","tipo_atividade":"Recreação","descricao":"adad","material_necessario":null,"publico_alvo":null,"evento_id":3,"responsavel_id":2,"status":"concluida","data_inicio":"2025-09-17","data_fim_prevista":"2025-10-02","data_fim_real":null,"data_criacao":"2025-09-16 20:03:41","data_atualizacao":"2025-09-16 20:03:41"}', NULL, '::1', '2025-09-18 01:59:16'),
+	(90, 1, 'Atividade removida', 'tarefas', 1, '{"id":1,"titulo":"Preparar decoração temática","tipo_atividade":"Setup","descricao":"Montar cenário e decoração do tema super-heróis","material_necessario":"Balões, painéis, fantasias, adesivos","publico_alvo":"Crianças 5-10 anos","evento_id":1,"responsavel_id":3,"status":"em_execucao","data_inicio":"2024-01-15","data_fim_prevista":"2024-01-30","data_fim_real":null,"data_criacao":"2025-09-16 19:21:40","data_atualizacao":"2025-09-17 20:39:20"}', NULL, '::1', '2025-09-18 01:59:47'),
+	(91, 1, 'Atividade removida', 'tarefas', 2, '{"id":2,"titulo":"Organizar gincana de heróis","tipo_atividade":"Recreação","descricao":"Coordenar brincadeiras e desafios temáticos","material_necessario":"Cordas, bolas, obstáculos, fantasias","publico_alvo":"Crianças 5-10 anos","evento_id":1,"responsavel_id":3,"status":"concluida","data_inicio":"2024-01-21","data_fim_prevista":"2024-01-25","data_fim_real":null,"data_criacao":"2025-09-16 19:21:40","data_atualizacao":"2025-09-17 20:39:20"}', NULL, '::1', '2025-09-18 01:59:49'),
+	(92, 1, 'Atividade removida', 'tarefas', 8, '{"id":8,"titulo":"Desenvolver navegação","tipo_atividade":"Recreação","descricao":"Implementar sistema de rotas","material_necessario":null,"publico_alvo":null,"evento_id":2,"responsavel_id":4,"status":"pendente","data_inicio":"2024-02-16","data_fim_prevista":"2024-02-25","data_fim_real":null,"data_criacao":"2025-09-16 19:21:40","data_atualizacao":"2025-09-16 19:21:40"}', NULL, '::1', '2025-09-18 01:59:52'),
+	(93, 1, 'Atividade removida', 'tarefas', 6, '{"id":6,"titulo":"Prototipagem do app","tipo_atividade":"Recreação","descricao":"Criar protótipo navegável","material_necessario":null,"publico_alvo":null,"evento_id":2,"responsavel_id":5,"status":"concluida","data_inicio":"2024-02-01","data_fim_prevista":"2024-02-10","data_fim_real":null,"data_criacao":"2025-09-16 19:21:40","data_atualizacao":"2025-09-16 19:21:40"}', NULL, '::1', '2025-09-18 01:59:58'),
+	(94, 1, 'Membro adicionado a equipe', 'equipes', 4, NULL, '{"usuario_id":1}', '::1', '2025-09-18 02:00:34'),
+	(95, 1, 'Equipe atualizada', 'equipes', 4, '{"id":4,"nome":"Equipe de Arte e Criatividade","especialidade":"Arte","capacidade_eventos":1,"descricao":"Responsável por oficinas de arte e atividades criativas","data_criacao":"2025-09-16 19:21:40","data_atualizacao":"2025-09-17 20:39:20","membros":[{"usuario_id":5,"data_entrada":"2025-09-16 19:21:40","nome_completo":"Ana Carolina Ferreira","perfil":"auxiliar"},{"usuario_id":1,"data_entrada":"2025-09-17 23:00:34","nome_completo":"Luiz H Segantini","perfil":"administrador"}]}', '{"nome":"Equipe de Arte e Criatividade","especialidade":"Arte","capacidade_eventos":5}', '::1', '2025-09-18 02:00:41'),
+	(96, 1, 'Membro removido da equipe', 'equipes', 4, '{"usuario_id":5}', NULL, '::1', '2025-09-18 02:00:44'),
+	(97, 1, 'Login realizado', NULL, NULL, NULL, NULL, '167.250.235.131', '2025-09-18 02:11:56');
 
 -- Copiando estrutura para tabela sistema_projetos.tarefas
 CREATE TABLE IF NOT EXISTS `tarefas` (
@@ -320,19 +350,11 @@ CREATE TABLE IF NOT EXISTS `tarefas` (
   CONSTRAINT `tarefas_ibfk_2` FOREIGN KEY (`responsavel_id`) REFERENCES `usuarios` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela sistema_projetos.tarefas: ~11 rows (aproximadamente)
+-- Copiando dados para a tabela sistema_projetos.tarefas: ~3 rows (aproximadamente)
 INSERT INTO `tarefas` (`id`, `titulo`, `tipo_atividade`, `descricao`, `material_necessario`, `publico_alvo`, `evento_id`, `responsavel_id`, `status`, `data_inicio`, `data_fim_prevista`, `data_fim_real`, `data_criacao`, `data_atualizacao`) VALUES
-	(1, 'Preparar decoração temática', 'Setup', 'Montar cenário e decoração do tema super-heróis', 'Balões, painéis, fantasias, adesivos', 'Crianças 5-10 anos', 1, 3, 'em_execucao', '2024-01-15', '2024-01-30', NULL, '2025-09-16 22:21:40', '2025-09-17 23:39:20'),
-	(2, 'Organizar gincana de heróis', 'Recreação', 'Coordenar brincadeiras e desafios temáticos', 'Cordas, bolas, obstáculos, fantasias', 'Crianças 5-10 anos', 1, 3, 'concluida', '2024-01-21', '2024-01-25', NULL, '2025-09-16 22:21:40', '2025-09-17 23:39:20'),
-	(3, 'Implementar API de produtos', 'Recreação', 'Criar endpoints para gestão de produtos', NULL, NULL, 1, 4, 'em_execucao', '2024-01-26', '2024-02-05', NULL, '2025-09-16 22:21:40', '2025-09-16 22:21:40'),
-	(4, 'Design da homepage', 'Recreação', 'Criar layout da página inicial', NULL, NULL, 1, 5, 'em_execucao', '2024-01-22', '2024-02-01', NULL, '2025-09-16 22:21:40', '2025-09-16 22:21:40'),
 	(5, 'Testes de integração', 'Recreação', 'Executar testes entre componentes', NULL, NULL, 1, 3, 'pendente', '2024-02-06', '2024-02-10', NULL, '2025-09-16 22:21:40', '2025-09-16 22:21:40'),
-	(6, 'Prototipagem do app', 'Recreação', 'Criar protótipo navegável', NULL, NULL, 2, 5, 'concluida', '2024-02-01', '2024-02-10', NULL, '2025-09-16 22:21:40', '2025-09-16 22:21:40'),
-	(8, 'Desenvolver navegação', 'Recreação', 'Implementar sistema de rotas', NULL, NULL, 2, 4, 'pendente', '2024-02-16', '2024-02-25', NULL, '2025-09-16 22:21:40', '2025-09-16 22:21:40'),
 	(9, 'Análise de custos AWS', 'Recreação', 'Levantamento de custos da migração', NULL, NULL, 3, 4, 'pendente', '2024-03-01', '2024-03-10', NULL, '2025-09-16 22:21:40', '2025-09-16 22:21:40'),
-	(10, 'Plano de migração', 'Recreação', 'Documentar estratégia de migração', NULL, NULL, 3, 4, 'pendente', '2024-03-11', '2024-03-20', NULL, '2025-09-16 22:21:40', '2025-09-16 22:21:40'),
-	(11, 'adad', 'Recreação', 'adad', NULL, NULL, 3, 2, 'concluida', '2025-09-17', '2025-10-02', NULL, '2025-09-16 23:03:41', '2025-09-16 23:03:41'),
-	(12, 'Teste 1', 'Recreação', 'Teste', NULL, NULL, 7, 2, 'em_execucao', '2025-09-16', '2025-09-19', NULL, '2025-09-17 01:09:11', '2025-09-17 01:09:11');
+	(10, 'Plano de migração', 'Recreação', 'Documentar estratégia de migração', NULL, NULL, 3, 4, 'pendente', '2024-03-11', '2024-03-20', NULL, '2025-09-16 22:21:40', '2025-09-16 22:21:40');
 
 -- Copiando estrutura para tabela sistema_projetos.usuarios
 CREATE TABLE IF NOT EXISTS `usuarios` (
@@ -352,9 +374,9 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
   UNIQUE KEY `login` (`login`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Copiando dados para a tabela sistema_projetos.usuarios: ~5 rows (aproximadamente)
+-- Copiando dados para a tabela sistema_projetos.usuarios: ~6 rows (aproximadamente)
 INSERT INTO `usuarios` (`id`, `nome_completo`, `cpf`, `email`, `cargo`, `login`, `senha`, `perfil`, `data_criacao`, `data_atualizacao`) VALUES
-	(1, 'Administrador do Sistema', '000.000.000-00', 'admin@techcorp.com', 'Administrador do Sistema', 'admin', 'e10adc3949ba59abbe56e057f20f883e', 'administrador', '2025-09-16 22:21:40', '2025-09-17 23:39:20'),
+	(1, 'Luiz H Segantini', '000.000.000-00', 'admin@techcorp.com', 'Administrador do Sistema', 'admin', 'e10adc3949ba59abbe56e057f20f883e', 'administrador', '2025-09-16 22:21:40', '2025-09-18 01:39:23'),
 	(2, 'João Silva Santos', '111.111.111-11', 'joao@techcorp.com', 'Coordenador de Eventos', 'gerente', 'e10adc3949ba59abbe56e057f20f883e', 'coordenador', '2025-09-16 22:21:40', '2025-09-17 23:39:20'),
 	(3, 'Maria Oliveira Costa', '222.222.222-22', 'maria@techcorp.com', 'Animador Infantil', 'colaborador', 'e10adc3949ba59abbe56e057f20f883e', 'animador', '2025-09-16 22:21:40', '2025-09-17 23:39:20'),
 	(4, 'Pedro Almeida Lima', '333.333.333-33', 'pedro@techcorp.com', 'Monitor de Atividades', 'pedro', 'e10adc3949ba59abbe56e057f20f883e', 'monitor', '2025-09-16 22:21:40', '2025-09-17 23:39:20'),
