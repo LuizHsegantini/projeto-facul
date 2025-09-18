@@ -6,7 +6,7 @@ require_once 'includes/auth.php';
 
 // Se já estiver logado, redirecionar para dashboard
 if (isset($_SESSION['user_id'])) {
-    header('Location: dashboard.php');
+    header('Location: dashboard_eventos.php');
     exit();
 }
 
@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Por favor, preencha todos os campos.';
     } else {
         if (login($username, $password)) {
-            header('Location: dashboard.php');
+            header('Location: dashboard_eventos.php');
             exit();
         } else {
             $error = 'Usuário ou senha incorretos.';

@@ -1,0 +1,692 @@
+<?php
+// checkin.php - Sistema de check-in/check-out para eventos
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+require_once 'includes/auth.php';
+require_once 'controllers/EventosController.php';
+require_once 'controllers/CriancasController.php';
+
+// Verificar se o usuário está logado
+requireLogin();
+
+$eventosController = new EventosController();
+$criancasController = new CriancasController();
+$currentUser = getCurrentUser();
+
+// Processar ações
+$message = '';
+$messageType = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['action'])) {
+        switch ($_POST['action']) {
+            case 'checkin':
+                $result = $eventosController->checkinCrianca($_POST['evento_id'], $_POST['crianca_id']);
+                if ($result) {
+                    $message = 'Check-in realizado com sucesso!';
+                    $messageType = 'success';
+                } else {
+                    $message = 'Erro ao realizar check-in.';
+                    $messageType = 'danger';
+                }
+                break;
+                
+            case 'checkout':
+                $result = $eventosController->checkoutCrianca($_POST['evento_id'], $_POST['crianca_id']);
+                if ($result) {
+                    $message = 'Check-out realizado com sucesso!';
+                    $messageType = 'success';
+                } else {
+                    $message = 'Erro ao realizar check-out.';
+                    $messageType = 'danger';
+                }
+                break;
+        }
+    }
+}
+
+// Buscar eventos ativos ou próximos
+$eventosAtivos = $eventosController->index('', '', 1, 50)['eventos'];
+$evento_id = $_GET['evento'] ?? '';
+
+// Se um evento foi selecionado, buscar as crianças
+$criancasEvento = [];
+if ($evento_id) {
+    $criancasEvento = $eventosController->getEventoCriancas($evento_id);
+}
+
+// Buscar todos os check-ins/check-outs recentes
+$checkins_recentes = $criancasController->getCriancasCheckin();
+?>
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check-in/Check-out - MagicKids</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #ff6b9d;
+            --secondary-color: #ffc93c;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #06bcf4;
+        }
+        
+        body {
+            background-color: #fef7ff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .sidebar {
+            background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            min-height: 100vh;
+            padding: 0;
+            position: fixed;
+            width: 250px;
+            z-index: 1000;
+        }
+        
+        .sidebar .company-info {
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+        
+        .sidebar .company-info i {
+            font-size: 2rem;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+        
+        .sidebar .company-name {
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 2rem;
+        }
+        
+        .card {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 2px 10px rgba(255, 107, 157, 0.1);
+        }
+        
+        .btn {
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        
+        .badge {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.75rem;
+        }
+        
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .crianca-card {
+            border-left: 4px solid;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+        
+        .crianca-card.inscrito {
+            border-left-color: #6c757d;
+        }
+        
+        .crianca-card.confirmado {
+            border-left-color: var(--info-color);
+        }
+        
+        .crianca-card.checkin {
+            border-left-color: var(--success-color);
+            background-color: #f8fff9;
+        }
+        
+        .crianca-card.checkout {
+            border-left-color: var(--warning-color);
+            background-color: #fffdf8;
+        }
+        
+        .crianca-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+        
+        .alergia-alert {
+            background: #ffe4e1;
+            color: #d63384;
+            padding: 0.25rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            margin: 0.1rem;
+            display: inline-block;
+        }
+        
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 0.3rem 0.6rem;
+        }
+        
+        .quick-search {
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="company-info">
+            <i class="fas fa-magic"></i>
+            <div class="company-name">MagicKids Eventos</div>
+        </div>
+        
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="dashboard_eventos.php">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="eventos.php">
+                    <i class="fas fa-calendar-star me-2"></i>Eventos
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="criancas.php">
+                    <i class="fas fa-child me-2"></i>Crianças
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="cadastro_crianca.php">
+                    <i class="fas fa-user-plus me-2"></i>Cadastrar Criança
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="checkin.php">
+                    <i class="fas fa-clipboard-check me-2"></i>Check-in/Check-out
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="atividades.php">
+                    <i class="fas fa-gamepad me-2"></i>Atividades
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="equipes.php">
+                    <i class="fas fa-users me-2"></i>Equipes
+                </a>
+            </li>
+            <?php if (hasPermission('administrador')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="funcionarios.php">
+                    <i class="fas fa-user-tie me-2"></i>Funcionários
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="relatorios.php">
+                    <i class="fas fa-chart-bar me-2"></i>Relatórios
+                </a>
+            </li>
+            <?php endif; ?>
+        </ul>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-0">Check-in / Check-out</h2>
+                <p class="text-muted mb-0">Controle de presença das crianças nos eventos</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#searchModal">
+                    <i class="fas fa-search me-2"></i>Busca Rápida
+                </button>
+                <button class="btn btn-primary" onclick="location.reload()">
+                    <i class="fas fa-sync me-2"></i>Atualizar
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mensagens -->
+        <?php if ($message): ?>
+        <div class="alert alert-<?php echo $messageType; ?> alert-dismissible fade show" role="alert">
+            <i class="fas fa-<?php echo $messageType === 'success' ? 'check-circle' : 'exclamation-triangle'; ?> me-2"></i>
+            <?php echo $message; ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <?php endif; ?>
+        
+        <!-- Seleção de Evento -->
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar-star me-2 text-primary"></i>
+                    Selecionar Evento
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-8">
+                        <select class="form-select" name="evento" id="eventoSelect" onchange="this.form.submit()">
+                            <option value="">Selecione um evento...</option>
+                            <?php foreach ($eventosAtivos as $evento): ?>
+                            <option value="<?php echo $evento['id']; ?>" <?php echo $evento_id == $evento['id'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($evento['nome']); ?> - 
+                                <?php echo date('d/m/Y', strtotime($evento['data_inicio'])); ?>
+                                (<?php echo $evento['total_inscricoes']; ?>/<?php echo $evento['capacidade_maxima']; ?>)
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <?php if ($evento_id): ?>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-info">
+                                <i class="fas fa-users me-1"></i>
+                                <?php echo count($criancasEvento); ?> crianças
+                            </span>
+                            <span class="badge bg-success">
+                                <i class="fas fa-sign-in-alt me-1"></i>
+                                <?php echo count(array_filter($criancasEvento, function($c) { return $c['status_participacao'] === 'Check-in'; })); ?> check-ins
+                            </span>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <?php if ($evento_id && !empty($criancasEvento)): ?>
+        <!-- Lista de Crianças do Evento -->
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-child me-2 text-success"></i>
+                    Crianças do Evento
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <?php foreach ($criancasEvento as $crianca): ?>
+                    <div class="col-lg-6 col-xl-4 mb-3">
+                        <div class="card crianca-card <?php echo strtolower(str_replace('-', '', $crianca['status_participacao'])); ?>">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-start">
+                                    <div class="crianca-avatar">
+                                        <?php echo strtoupper(substr($crianca['nome_completo'], 0, 2)); ?>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                <h6 class="mb-1"><?php echo htmlspecialchars($crianca['nome_completo']); ?></h6>
+                                                <small class="text-muted">
+                                                    <?php echo $crianca['idade']; ?> anos • 
+                                                    <?php echo htmlspecialchars($crianca['nome_responsavel']); ?>
+                                                </small>
+                                            </div>
+                                            <span class="badge status-badge bg-<?php 
+                                                echo $crianca['status_participacao'] === 'Check-in' ? 'success' : 
+                                                    ($crianca['status_participacao'] === 'Check-out' ? 'warning' : 
+                                                    ($crianca['status_participacao'] === 'Confirmado' ? 'info' : 'secondary')); 
+                                            ?>">
+                                                <?php echo $crianca['status_participacao']; ?>
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="mb-2">
+                                            <small class="text-muted">
+                                                <i class="fas fa-phone me-1"></i>
+                                                <?php echo htmlspecialchars($crianca['telefone_principal']); ?>
+                                            </small>
+                                        </div>
+                                        
+                                        <?php if (!empty($crianca['alergia_alimentos']) || !empty($crianca['alergia_medicamentos'])): ?>
+                                        <div class="mb-2">
+                                            <?php if (!empty($crianca['alergia_alimentos'])): ?>
+                                            <span class="alergia-alert">
+                                                <i class="fas fa-utensils me-1"></i>
+                                                <?php echo htmlspecialchars($crianca['alergia_alimentos']); ?>
+                                            </span>
+                                            <?php endif; ?>
+                                            <?php if (!empty($crianca['alergia_medicamentos'])): ?>
+                                            <span class="alergia-alert">
+                                                <i class="fas fa-pills me-1"></i>
+                                                <?php echo htmlspecialchars($crianca['alergia_medicamentos']); ?>
+                                            </span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php endif; ?>
+                                        
+                                        <?php if ($crianca['data_checkin']): ?>
+                                        <small class="text-muted d-block">
+                                            <i class="fas fa-sign-in-alt me-1"></i>
+                                            Check-in: <?php echo date('H:i', strtotime($crianca['data_checkin'])); ?>
+                                            <?php if ($crianca['usuario_checkin_nome']): ?>
+                                            por <?php echo htmlspecialchars($crianca['usuario_checkin_nome']); ?>
+                                            <?php endif; ?>
+                                        </small>
+                                        <?php endif; ?>
+                                        
+                                        <?php if ($crianca['data_checkout']): ?>
+                                        <small class="text-muted d-block">
+                                            <i class="fas fa-sign-out-alt me-1"></i>
+                                            Check-out: <?php echo date('H:i', strtotime($crianca['data_checkout'])); ?>
+                                            <?php if ($crianca['usuario_checkout_nome']): ?>
+                                            por <?php echo htmlspecialchars($crianca['usuario_checkout_nome']); ?>
+                                            <?php endif; ?>
+                                        </small>
+                                        <?php endif; ?>
+                                        
+                                        <div class="mt-3 d-flex gap-2">
+                                            <?php if ($crianca['status_participacao'] !== 'Check-in' && $crianca['status_participacao'] !== 'Check-out'): ?>
+                                            <button type="button" class="btn btn-success btn-sm flex-grow-1" 
+                                                    onclick="realizarCheckin(<?php echo $evento_id; ?>, <?php echo $crianca['crianca_id']; ?>, '<?php echo htmlspecialchars($crianca['nome_completo']); ?>')">
+                                                <i class="fas fa-sign-in-alt me-1"></i>Check-in
+                                            </button>
+                                            <?php elseif ($crianca['status_participacao'] === 'Check-in'): ?>
+                                            <button type="button" class="btn btn-warning btn-sm flex-grow-1" 
+                                                    onclick="realizarCheckout(<?php echo $evento_id; ?>, <?php echo $crianca['crianca_id']; ?>, '<?php echo htmlspecialchars($crianca['nome_completo']); ?>')">
+                                                <i class="fas fa-sign-out-alt me-1"></i>Check-out
+                                            </button>
+                                            <?php else: ?>
+                                            <span class="badge bg-secondary">Finalizado</span>
+                                            <?php endif; ?>
+                                            
+                                            <button type="button" class="btn btn-outline-info btn-sm" 
+                                                    onclick="verDetalhes(<?php echo htmlspecialchars(json_encode($crianca)); ?>)">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+        
+        <?php elseif ($evento_id): ?>
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Nenhuma criança inscrita neste evento</h5>
+                <p class="text-muted">Adicione crianças ao evento para começar o check-in</p>
+                <a href="eventos.php?id=<?php echo $evento_id; ?>" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Gerenciar Inscrições
+                </a>
+            </div>
+        </div>
+        
+        <?php else: ?>
+        <!-- Resumo Geral de Check-ins -->
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2 text-info"></i>
+                    Check-ins Recentes
+                </h5>
+            </div>
+            <div class="card-body">
+                <?php if (empty($checkins_recentes)): ?>
+                    <div class="text-center py-4">
+                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Nenhum check-in registrado recentemente</p>
+                    </div>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Criança</th>
+                                    <th>Evento</th>
+                                    <th>Status</th>
+                                    <th>Check-in</th>
+                                    <th>Check-out</th>
+                                    <th>Responsável pelo Check</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach (array_slice($checkins_recentes, 0, 20) as $checkin): ?>
+                                <tr>
+                                    <td>
+                                        <strong><?php echo htmlspecialchars($checkin['nome_completo']); ?></strong><br>
+                                        <small class="text-muted"><?php echo $checkin['idade']; ?> anos</small>
+                                    </td>
+                                    <td>
+                                        <strong><?php echo htmlspecialchars($checkin['evento_nome']); ?></strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-<?php 
+                                            echo $checkin['status_participacao'] === 'Check-in' ? 'success' : 
+                                                ($checkin['status_participacao'] === 'Check-out' ? 'warning' : 'info'); 
+                                        ?>">
+                                            <?php echo $checkin['status_participacao']; ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <?php if ($checkin['data_checkin']): ?>
+                                            <?php echo date('d/m H:i', strtotime($checkin['data_checkin'])); ?>
+                                        <?php else: ?>
+                                            <span class="text-muted">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if ($checkin['data_checkout']): ?>
+                                            <?php echo date('d/m H:i', strtotime($checkin['data_checkout'])); ?>
+                                        <?php else: ?>
+                                            <span class="text-muted">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <?php if ($checkin['usuario_checkin_nome']): ?>
+                                                In: <?php echo htmlspecialchars($checkin['usuario_checkin_nome']); ?>
+                                            <?php endif; ?>
+                                            <?php if ($checkin['usuario_checkout_nome']): ?>
+                                                <br>Out: <?php echo htmlspecialchars($checkin['usuario_checkout_nome']); ?>
+                                            <?php endif; ?>
+                                        </small>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+    </main>
+    
+    <!-- Modal de Busca Rápida -->
+    <div class="modal fade" id="searchModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Busca Rápida de Criança</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control" id="quickSearch" placeholder="Digite o nome da criança ou responsável">
+                    <div id="searchResults" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Detalhes -->
+    <div class="modal fade" id="detailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Detalhes da Criança</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="detailsContent">
+                    <!-- Preenchido via JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function realizarCheckin(eventoId, criancaId, nomeCrianca) {
+            if (confirm(`Confirmar CHECK-IN de ${nomeCrianca}?`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="checkin">
+                    <input type="hidden" name="evento_id" value="${eventoId}">
+                    <input type="hidden" name="crianca_id" value="${criancaId}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        function realizarCheckout(eventoId, criancaId, nomeCrianca) {
+            if (confirm(`Confirmar CHECK-OUT de ${nomeCrianca}?`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="checkout">
+                    <input type="hidden" name="evento_id" value="${eventoId}">
+                    <input type="hidden" name="crianca_id" value="${criancaId}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        function verDetalhes(crianca) {
+            const content = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Informações da Criança</h6>
+                        <p><strong>Nome:</strong> ${crianca.nome_completo}</p>
+                        <p><strong>Idade:</strong> ${crianca.idade} anos</p>
+                        <p><strong>Responsável:</strong> ${crianca.nome_responsavel}</p>
+                        <p><strong>Telefone:</strong> ${crianca.telefone_principal}</p>
+                        ${crianca.alergia_alimentos ? `<p><strong>Alergia Alimentos:</strong> <span class="text-danger">${crianca.alergia_alimentos}</span></p>` : ''}
+                        ${crianca.alergia_medicamentos ? `<p><strong>Alergia Medicamentos:</strong> <span class="text-danger">${crianca.alergia_medicamentos}</span></p>` : ''}
+                        ${crianca.observacoes_saude ? `<p><strong>Observações:</strong> ${crianca.observacoes_saude}</p>` : ''}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Status no Evento</h6>
+                        <p><strong>Status:</strong> <span class="badge bg-info">${crianca.status_participacao}</span></p>
+                        ${crianca.data_checkin ? `<p><strong>Check-in:</strong> ${new Date(crianca.data_checkin).toLocaleString('pt-BR')}</p>` : ''}
+                        ${crianca.data_checkout ? `<p><strong>Check-out:</strong> ${new Date(crianca.data_checkout).toLocaleString('pt-BR')}</p>` : ''}
+                        ${crianca.usuario_checkin_nome ? `<p><strong>Check-in por:</strong> ${crianca.usuario_checkin_nome}</p>` : ''}
+                        ${crianca.usuario_checkout_nome ? `<p><strong>Check-out por:</strong> ${crianca.usuario_checkout_nome}</p>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('detailsContent').innerHTML = content;
+            new bootstrap.Modal(document.getElementById('detailsModal')).show();
+        }
+        
+        // Busca rápida
+        let searchTimeout;
+        document.getElementById('quickSearch').addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const termo = this.value.trim();
+            
+            if (termo.length < 2) {
+                document.getElementById('searchResults').innerHTML = '';
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                // Aqui você faria uma requisição AJAX para buscar crianças
+                // Por simplicidade, vou simular uma busca
+                document.getElementById('searchResults').innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin"></i> Buscando...
+                    </div>
+                `;
+                
+                // Simular delay de busca
+                setTimeout(() => {
+                    document.getElementById('searchResults').innerHTML = `
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Implementar busca AJAX aqui
+                        </div>
+                    `;
+                }, 1000);
+            }, 300);
+        });
+        
+        // Auto-refresh a cada 30 segundos se estiver em um evento
+        <?php if ($evento_id): ?>
+        setInterval(function() {
+            if (document.visibilityState === 'visible') {
+                location.reload();
+            }
+        }, 30000);
+        <?php endif; ?>
+    </script>
+</body>
+</html>
