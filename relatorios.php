@@ -33,121 +33,14 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
     <title>Relatorios - MagicKids</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #ff6b9d;
-            --accent-color: #4338ca;
-            --muted-color: #6366f1;
-        }
-
-        body {
-            background-color: #f5f5fb;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .sidebar {
-            background: linear-gradient(180deg, var(--primary-color) 0%, var(--muted-color) 100%);
-            min-height: 100vh;
-            width: 250px;
-            position: fixed;
-            top: 0;
-            left: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            color: #ffffff;
-        }
-
-        .sidebar .company-info {
-            padding: 1.5rem 1rem;
-            text-align: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-        }
-
-        .sidebar nav {
-            padding: 1.5rem 1rem;
-        }
-
-        .sidebar .nav-link {
-            color: rgba(255, 255, 255, 0.85);
-            padding: 0.75rem 1rem;
-            border-radius: 10px;
-            margin-bottom: 0.5rem;
-            transition: all 0.2s ease;
-            font-weight: 500;
-        }
-
-        .sidebar .nav-link:hover,
-        .sidebar .nav-link.active {
-            background-color: rgba(255, 255, 255, 0.15);
-            color: #ffffff;
-            transform: translateX(6px);
-        }
-
-        .main-content {
-            margin-left: 250px;
-            padding: 2rem;
-        }
-
-        .header-bar {
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 1.5rem 2rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 12px 32px rgba(67, 56, 202, 0.15);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .stat-card {
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 1.5rem;
-            height: 100%;
-            box-shadow: 0 12px 32px rgba(67, 56, 202, 0.1);
-        }
-
-        .stat-label {
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.08em;
-            color: #818cf8;
-            margin-bottom: 0.5rem;
-        }
-
-        .mini-card {
-            border-radius: 14px;
-            border: none;
-            box-shadow: 0 8px 24px rgba(255, 107, 157, 0.15);
-        }
-
-        .timeline-item {
-            border-left: 3px solid var(--accent-color);
-            padding-left: 1rem;
-            margin-left: 0.5rem;
-            position: relative;
-        }
-
-        .timeline-item::before {
-            content: '';
-            width: 12px;
-            height: 12px;
-            background: var(--accent-color);
-            border-radius: 50%;
-            position: absolute;
-            left: -7.5px;
-            top: 4px;
-        }
-    </style>
+    <link rel="stylesheet" href="assets/css/relatorios.css">    
 </head>
 <body>
-    <div class="sidebar">
-        <div>
-            <div class="company-info">
-                <i class="fas fa-hat-wizard"></i>
-                <div class="fw-bold">MagicKids</div>
-                <p class="mb-0">Centro de Eventos</p>
+    <nav class="sidebar">
+        <div class="company-info">
+                <i class="fas fa-magic"></i>
+                <div class="fw-bold">MagicKids Eventos</div>
+                <p class="mb-0">Sistema de gestão</p>
             </div>
             <nav class="nav flex-column">
                 <a class="nav-link" href="dashboard_eventos.php"><i class="fas fa-chart-line me-2"></i>Dashboard</a>
@@ -403,5 +296,3 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
-

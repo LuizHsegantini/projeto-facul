@@ -1,5 +1,5 @@
-<?php
-// includes/auth.php - Versão Unificada
+﻿<?php
+// includes/auth.php - Versão Simplificada e Robusta
 
 // Iniciar sessão apenas se não estiver ativa
 if (session_status() === PHP_SESSION_NONE) {
@@ -34,9 +34,27 @@ function login($username, $password) {
             $_SESSION['user_profile'] = $user['perfil'];
             $_SESSION['user_login'] = $user['login'];
             $_SESSION['user_cargo'] = $user['cargo'] ?? '';
+            $_SESSION['last_activity'] = time();
             
-            // Registrar log de login
-            logSystemAction($user['id'], 'Login realizado');
+            // Registrar log de login usando LogService
+            try {
+                LogService::recordLog(
+                    $user['id'], 
+                    'Login realizado',
+                    null,
+                    null,
+                    null,
+                    null,
+                    [
+                        'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+                        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                        'session_id' => session_id()
+                    ]
+                );
+            } catch (Exception $e) {
+                // Log falhou mas login continua
+                error_log("Erro ao registrar log de login: " . $e->getMessage());
+            }
             
             return true;
         }
@@ -48,31 +66,52 @@ function login($username, $password) {
     }
 }
 
+// Validar sessão básica
+function validateSession() {
+    if (!isset($_SESSION['user_id'])) {
+        return false;
+    }
+    
+    // Verificar timeout de 30 minutos
+    if (isset($_SESSION['last_activity'])) {
+        $inactive = time() - $_SESSION['last_activity'];
+        if ($inactive >= 1800) { // 30 minutos
+            // Não chamar performLogout aqui para evitar recursão
+            session_unset();
+            session_destroy();
+            return false;
+        }
+    }
+    
+    // Atualizar último acesso
+    $_SESSION['last_activity'] = time();
+    
+    return true;
+}
+
 // Verificar se o usuário está logado
 function requireLogin() {
-    if (!isset($_SESSION['user_id'])) {
-        header('Location: login.php');
+    if (!validateSession()) {
+        header('Location: login.php?error=' . urlencode('Você precisa estar logado'));
         exit();
     }
 }
 
 // Função para verificar autenticação com perfil específico
 function checkAuth($required_profile = null) {
-    // Verificar se o usuário está logado
-    if (!isset($_SESSION['user_id'])) {
-        header('Location: login.php?error=Você precisa estar logado para acessar esta página');
+    if (!validateSession()) {
+        header('Location: login.php?error=' . urlencode('Você precisa estar logado para acessar esta página'));
         exit();
     }
     
-    // Verificar perfil se especificado
     if ($required_profile && $_SESSION['user_profile'] !== $required_profile) {
         if ($required_profile === 'administrador' && !in_array($_SESSION['user_profile'], ['administrador'])) {
-            header('Location: dashboard.php?error=Acesso negado: Permissões insuficientes');
+            header('Location: dashboard_eventos.php?error=' . urlencode('Acesso negado: Permissões insuficientes'));
             exit();
         }
         
-        if ($required_profile === 'gerente' && !in_array($_SESSION['user_profile'], ['administrador', 'gerente'])) {
-            header('Location: dashboard.php?error=Acesso negado: Permissões insuficientes');
+        if ($required_profile === 'coordenador' && !in_array($_SESSION['user_profile'], ['administrador', 'coordenador'])) {
+            header('Location: dashboard_eventos.php?error=' . urlencode('Acesso negado: Permissões insuficientes'));
             exit();
         }
     }
@@ -82,32 +121,38 @@ function checkAuth($required_profile = null) {
 
 // Verificar se o usuário tem permissão específica
 function hasPermission($permission) {
-    if (!isset($_SESSION['user_profile'])) {
+    if (!validateSession()) {
         return false;
     }
     
     $user_profile = $_SESSION['user_profile'];
     
-    // Para compatibilidade com ambos os sistemas
     switch ($permission) {
         case 'admin':
         case 'administrador':
             return $user_profile === 'administrador';
             
         case 'manage_projects':
-            return in_array($user_profile, ['administrador', 'gerente']);
+            return in_array($user_profile, ['administrador', 'coordenador']);
             
         case 'manage_users':
             return $user_profile === 'administrador';
             
         case 'view_reports':
-            return in_array($user_profile, ['administrador', 'gerente']);
+            return in_array($user_profile, ['administrador', 'coordenador']);
             
-        case 'gerente':
-            return in_array($user_profile, ['administrador', 'gerente']);
+        case 'coordenador':
+            return in_array($user_profile, ['administrador', 'coordenador']);
             
+        case 'animador':
+            return in_array($user_profile, ['administrador', 'coordenador', 'animador']);
+            
+        case 'monitor':
+            return in_array($user_profile, ['administrador', 'coordenador', 'animador', 'monitor']);
+            
+        case 'auxiliar':
         case 'colaborador':
-            return in_array($user_profile, ['administrador', 'gerente', 'colaborador']);
+            return in_array($user_profile, ['administrador', 'coordenador', 'animador', 'monitor', 'auxiliar']);
             
         default:
             return false;
@@ -116,30 +161,38 @@ function hasPermission($permission) {
 
 // Obter informações do usuário atual
 function getCurrentUser() {
-    if (!isset($_SESSION['user_id'])) {
+    if (!validateSession()) {
         return null;
     }
     
-    $database = new Database();
-    $db = $database->getConnection();
-    
-    $query = "SELECT * FROM usuarios WHERE id = :id";
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(':id', $_SESSION['user_id']);
-    $stmt->execute();
-    
-    $user = $stmt->fetch();
-    
-    // Mapear campo nome_completo para nome para compatibilidade
-    if ($user && isset($user['nome_completo'])) {
-        $user['nome'] = $user['nome_completo'];
+    try {
+        $database = new Database();
+        $db = $database->getConnection();
+        
+        $query = "SELECT * FROM usuarios WHERE id = :id";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':id', $_SESSION['user_id']);
+        $stmt->execute();
+        
+        $user = $stmt->fetch();
+        
+        if ($user && isset($user['nome_completo'])) {
+            $user['nome'] = $user['nome_completo'];
+        }
+        
+        return $user;
+    } catch (Exception $e) {
+        error_log("Erro ao obter usuário atual: " . $e->getMessage());
+        return null;
     }
-    
-    return $user;
 }
 
 // Obter informações básicas do usuário da sessão
 function getUserInfo() {
+    if (!validateSession()) {
+        return null;
+    }
+    
     return [
         'id' => $_SESSION['user_id'] ?? null,
         'name' => $_SESSION['user_name'] ?? '',
@@ -150,24 +203,9 @@ function getUserInfo() {
     ];
 }
 
-// Função para registrar ações no sistema (logs)
+// Função para registrar logs usando LogService
 function logSystemAction($user_id, $action, $table = null, $record_id = null, $old_data = null, $new_data = null, array $metadata = []) {
     try {
-        $autoMetadata = [
-            'request_uri' => $_SERVER['REQUEST_URI'] ?? null,
-            'request_method' => $_SERVER['REQUEST_METHOD'] ?? null,
-            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
-            'session_user_name' => $_SESSION['user_name'] ?? null,
-            'session_user_profile' => $_SESSION['user_profile'] ?? null,
-        ];
-
-        $metadata = array_filter(
-            array_merge($autoMetadata, $metadata),
-            static function ($value) {
-                return $value !== null && $value !== '';
-            }
-        );
-
         return LogService::recordLog(
             (int) $user_id,
             $action,
@@ -178,32 +216,71 @@ function logSystemAction($user_id, $action, $table = null, $record_id = null, $o
             $metadata
         );
     } catch (Exception $e) {
-        error_log("Erro ao registrar log do sistema: " . $e->getMessage());
+        error_log("Erro ao registrar log: " . $e->getMessage());
         return false;
     }
 }
 
-
-// Função para fazer logout simples (sem animação) - APENAS PARA EMERGÊNCIA
-function simpleLogout() {
+// Função para logout simples e direto
+function performLogout() {
+    // Registrar logout se tiver usuário logado
     if (isset($_SESSION['user_id'])) {
-        logSystemAction($_SESSION['user_id'], 'Logout simples realizado');
+        try {
+            LogService::recordLog(
+                $_SESSION['user_id'], 
+                'Logout realizado',
+                null,
+                null,
+                null,
+                null,
+                [
+                    'method' => 'manual',
+                    'timestamp' => date('Y-m-d H:i:s')
+                ]
+            );
+        } catch (Exception $e) {
+            // Log falhou mas logout continua
+            error_log("Erro ao registrar log de logout: " . $e->getMessage());
+        }
+    }
+    
+    // Limpar e destruir sessão
+    $_SESSION = array();
+    
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $params["secure"], $params["httponly"]
+        );
     }
     
     session_destroy();
-    header('Location: login.php?logout=1');
-    exit();
+    
+    return true;
 }
 
-// Processar logout - AGORA REDIRECIONA PARA LOGOUT.PHP COM ANIMAÇÕES
-if (isset($_GET['action']) && $_GET['action'] === 'logout') {
-    // Em vez de fazer logout direto, redirecionar para logout.php
-    header('Location: logout.php');
-    exit();
+// Processar logout via POST direto com suporte aos efeitos visuais
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'logout') {
+    
+    try {
+        performLogout();
+        
+        // Sempre redirecionar para login com sucesso (sem AJAX problemático)
+        header('Location: login.php?logout=visual_success');
+        exit();
+        
+    } catch (Exception $e) {
+        error_log("Erro no logout: " . $e->getMessage());
+        
+        // Em caso de erro, ainda assim redirecionar
+        header('Location: login.php?logout=error&msg=' . urlencode($e->getMessage()));
+        exit();
+    }
 }
 
-// Função auxiliar para logs (pode ser usada pelo logout.php se necessário)
-function logLogoutAction($user_id, $action = 'Logout realizado') {
-    return logSystemAction($user_id, $action);
+// Compatibilidade
+function destroySession() {
+    performLogout();
 }
 ?>

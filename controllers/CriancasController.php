@@ -10,11 +10,19 @@ class CriancasController {
         $this->conn = $database->getConnection();
     }
     
-    public function index($search = '', $idade_min = '', $idade_max = '', $sexo = '', $page = 1, $limit = 15) {
+    public function index($search = '', $idade_min = '', $idade_max = '', $sexo = '', $page = 1, $limit = 15, $status = 'ativo') {
         try {
             $offset = ($page - 1) * $limit;
-            $conditions = ['c.ativo = 1']; // Só mostrar crianças ativas por padrão
+            $conditions = [];
             $params = [];
+            
+            // Filtro de status
+            if ($status === 'ativo') {
+                $conditions[] = 'c.ativo = 1';
+            } elseif ($status === 'inativo') {
+                $conditions[] = 'c.ativo = 0';
+            }
+            // Se $status for 'todos', não adiciona filtro de ativo
             
             if (!empty($search)) {
                 $conditions[] = "(c.nome_completo LIKE :search OR c.nome_responsavel LIKE :search OR c.telefone_principal LIKE :search)";
@@ -36,7 +44,7 @@ class CriancasController {
                 $params[':sexo'] = $sexo;
             }
             
-            $whereClause = 'WHERE ' . implode(' AND ', $conditions);
+            $whereClause = !empty($conditions) ? 'WHERE ' . implode(' AND ', $conditions) : '';
             
             // Buscar crianças
             $query = "SELECT c.*, 
@@ -101,6 +109,63 @@ class CriancasController {
         }
     }
     
+    public function create($data) {
+        try {
+            // Calcular idade automaticamente
+            $idade = date_diff(date_create($data['data_nascimento']), date_create('today'))->y;
+            
+            $query = "INSERT INTO criancas_cadastro (
+                      nome_completo, data_nascimento, idade, sexo, 
+                      alergia_alimentos, alergia_medicamentos, restricoes_alimentares, observacoes_saude,
+                      nome_responsavel, grau_parentesco, telefone_principal, telefone_alternativo,
+                      endereco_completo, documento_rg_cpf, email_responsavel,
+                      nome_emergencia, telefone_emergencia, grau_parentesco_emergencia, autorizacao_retirada
+                      ) VALUES (
+                      :nome_completo, :data_nascimento, :idade, :sexo,
+                      :alergia_alimentos, :alergia_medicamentos, :restricoes_alimentares, :observacoes_saude,
+                      :nome_responsavel, :grau_parentesco, :telefone_principal, :telefone_alternativo,
+                      :endereco_completo, :documento_rg_cpf, :email_responsavel,
+                      :nome_emergencia, :telefone_emergencia, :grau_parentesco_emergencia, :autorizacao_retirada
+                      )";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(':nome_completo', $data['nome_completo']);
+            $stmt->bindValue(':data_nascimento', $data['data_nascimento']);
+            $stmt->bindValue(':idade', $idade);
+            $stmt->bindValue(':sexo', $data['sexo']);
+            $stmt->bindValue(':alergia_alimentos', $data['alergia_alimentos'] ?? '');
+            $stmt->bindValue(':alergia_medicamentos', $data['alergia_medicamentos'] ?? '');
+            $stmt->bindValue(':restricoes_alimentares', $data['restricoes_alimentares'] ?? '');
+            $stmt->bindValue(':observacoes_saude', $data['observacoes_saude'] ?? '');
+            $stmt->bindValue(':nome_responsavel', $data['nome_responsavel']);
+            $stmt->bindValue(':grau_parentesco', $data['grau_parentesco']);
+            $stmt->bindValue(':telefone_principal', $data['telefone_principal']);
+            $stmt->bindValue(':telefone_alternativo', $data['telefone_alternativo'] ?? '');
+            $stmt->bindValue(':endereco_completo', $data['endereco_completo']);
+            $stmt->bindValue(':documento_rg_cpf', $data['documento_rg_cpf']);
+            $stmt->bindValue(':email_responsavel', $data['email_responsavel'] ?? '');
+            $stmt->bindValue(':nome_emergencia', $data['nome_emergencia']);
+            $stmt->bindValue(':telefone_emergencia', $data['telefone_emergencia']);
+            $stmt->bindValue(':grau_parentesco_emergencia', $data['grau_parentesco_emergencia']);
+            $stmt->bindValue(':autorizacao_retirada', $data['autorizacao_retirada'] ?? 'Não');
+            
+            if ($stmt->execute()) {
+                $criancaId = $this->conn->lastInsertId();
+                if (isset($_SESSION['user_id'])) {
+                    $this->logAction($_SESSION['user_id'], 'Criança cadastrada', 'criancas_cadastro', $criancaId, 
+                                   null, json_encode($data));
+                }
+                return $criancaId;
+            }
+            
+            return false;
+            
+        } catch (Exception $e) {
+            error_log("Erro no CriancasController::create: " . $e->getMessage());
+            return false;
+        }
+    }
+    
     public function update($id, $data) {
         try {
             // Buscar dados antigos
@@ -125,22 +190,24 @@ class CriancasController {
                       WHERE id = :id";
             
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':id', $id);
-            $stmt->bindParam(':nome_completo', $data['nome_completo']);
-            $stmt->bindParam(':data_nascimento', $data['data_nascimento']);
-            $stmt->bindParam(':idade', $idade);
-            $stmt->bindParam(':sexo', $data['sexo']);
-            $stmt->bindParam(':alergia_alimentos', $data['alergia_alimentos'] ?? '');
-            $stmt->bindParam(':alergia_medicamentos', $data['alergia_medicamentos'] ?? '');
-            $stmt->bindParam(':restricoes_alimentares', $data['restricoes_alimentares'] ?? '');
-            $stmt->bindParam(':observacoes_saude', $data['observacoes_saude'] ?? '');
-            $stmt->bindParam(':nome_responsavel', $data['nome_responsavel']);
-            $stmt->bindParam(':telefone_principal', $data['telefone_principal']);
-            $stmt->bindParam(':nome_emergencia', $data['nome_emergencia']);
+            $stmt->bindValue(':id', $id);
+            $stmt->bindValue(':nome_completo', $data['nome_completo']);
+            $stmt->bindValue(':data_nascimento', $data['data_nascimento']);
+            $stmt->bindValue(':idade', $idade);
+            $stmt->bindValue(':sexo', $data['sexo']);
+            $stmt->bindValue(':alergia_alimentos', $data['alergia_alimentos'] ?? '');
+            $stmt->bindValue(':alergia_medicamentos', $data['alergia_medicamentos'] ?? '');
+            $stmt->bindValue(':restricoes_alimentares', $data['restricoes_alimentares'] ?? '');
+            $stmt->bindValue(':observacoes_saude', $data['observacoes_saude'] ?? '');
+            $stmt->bindValue(':nome_responsavel', $data['nome_responsavel']);
+            $stmt->bindValue(':telefone_principal', $data['telefone_principal']);
+            $stmt->bindValue(':nome_emergencia', $data['nome_emergencia']);
             
             if ($stmt->execute()) {
-                $this->logAction($_SESSION['user_id'], 'Criança atualizada', 'criancas_cadastro', $id, 
-                               json_encode($oldData), json_encode($data));
+                if (isset($_SESSION['user_id'])) {
+                    $this->logAction($_SESSION['user_id'], 'Criança atualizada', 'criancas_cadastro', $id, 
+                                   json_encode($oldData), json_encode($data));
+                }
                 return true;
             }
             
@@ -159,7 +226,7 @@ class CriancasController {
             // Verificar se a criança tem eventos associados
             $queryCheck = "SELECT COUNT(*) as total FROM evento_criancas WHERE crianca_id = :id";
             $stmtCheck = $this->conn->prepare($queryCheck);
-            $stmtCheck->bindParam(':id', $id);
+            $stmtCheck->bindValue(':id', $id);
             $stmtCheck->execute();
             $hasEvents = $stmtCheck->fetch()['total'] > 0;
             
@@ -174,11 +241,13 @@ class CriancasController {
             }
             
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':id', $id);
+            $stmt->bindValue(':id', $id);
             
             if ($stmt->execute()) {
-                $this->logAction($_SESSION['user_id'], $action, 'criancas_cadastro', $id, 
-                               json_encode($oldData), null);
+                if (isset($_SESSION['user_id'])) {
+                    $this->logAction($_SESSION['user_id'], $action, 'criancas_cadastro', $id, 
+                                   json_encode($oldData), null);
+                }
                 return true;
             }
             
@@ -190,20 +259,78 @@ class CriancasController {
         }
     }
     
+    public function forceDelete($id) {
+        try {
+            $oldData = $this->getById($id);
+            if (!$oldData) {
+                return false;
+            }
+            
+            // Iniciar transação para garantir integridade
+            $this->conn->beginTransaction();
+            
+            try {
+                // Primeiro, remover todas as associações com eventos
+                $queryEvents = "DELETE FROM evento_criancas WHERE crianca_id = :id";
+                $stmtEvents = $this->conn->prepare($queryEvents);
+                $stmtEvents->bindValue(':id', $id);
+                $stmtEvents->execute();
+                
+                // Remover logs relacionados (opcional - pode manter para auditoria)
+                // $queryLogs = "DELETE FROM logs_sistema WHERE tabela_afetada = 'criancas_cadastro' AND registro_id = :id";
+                // $stmtLogs = $this->conn->prepare($queryLogs);
+                // $stmtLogs->bindValue(':id', $id);
+                // $stmtLogs->execute();
+                
+                // Finalmente, excluir a criança
+                $query = "DELETE FROM criancas_cadastro WHERE id = :id";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindValue(':id', $id);
+                $stmt->execute();
+                
+                // Confirmar transação
+                $this->conn->commit();
+                
+                // Registrar log da exclusão forçada
+                if (isset($_SESSION['user_id'])) {
+                    $this->logAction($_SESSION['user_id'], 'Criança excluída permanentemente (com eventos)', 'criancas_cadastro', $id, 
+                                   json_encode($oldData), null);
+                }
+                
+                return true;
+                
+            } catch (Exception $e) {
+                // Reverter transação em caso de erro
+                $this->conn->rollBack();
+                throw $e;
+            }
+            
+        } catch (Exception $e) {
+            error_log("Erro no CriancasController::forceDelete: " . $e->getMessage());
+            return false;
+        }
+    }
+    
     public function toggleStatus($id) {
         try {
             $oldData = $this->getById($id);
+            if (!$oldData) {
+                return false;
+            }
+            
             $newStatus = $oldData['ativo'] ? 0 : 1;
             
             $query = "UPDATE criancas_cadastro SET ativo = :status, data_atualizacao = NOW() WHERE id = :id";
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':id', $id);
-            $stmt->bindParam(':status', $newStatus);
+            $stmt->bindValue(':id', $id);
+            $stmt->bindValue(':status', $newStatus);
             
             if ($stmt->execute()) {
                 $action = $newStatus ? 'Criança ativada' : 'Criança desativada';
-                $this->logAction($_SESSION['user_id'], $action, 'criancas_cadastro', $id, 
-                               json_encode($oldData), json_encode(['ativo' => $newStatus]));
+                if (isset($_SESSION['user_id'])) {
+                    $this->logAction($_SESSION['user_id'], $action, 'criancas_cadastro', $id, 
+                                   json_encode($oldData), json_encode(['ativo' => $newStatus]));
+                }
                 return true;
             }
             
@@ -306,7 +433,7 @@ class CriancasController {
                       ORDER BY e.data_inicio DESC";
             
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':crianca_id', $crianca_id);
+            $stmt->bindValue(':crianca_id', $crianca_id);
             $stmt->execute();
             
             return $stmt->fetchAll();
@@ -377,13 +504,15 @@ class CriancasController {
                       VALUES (:user_id, :action, :table, :record_id, :old_data, :new_data, :ip)";
             
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':user_id', $user_id);
-            $stmt->bindParam(':action', $action);
-            $stmt->bindParam(':table', $table);
-            $stmt->bindParam(':record_id', $record_id);
-            $stmt->bindParam(':old_data', $old_data);
-            $stmt->bindParam(':new_data', $new_data);
-            $stmt->bindParam(':ip', $_SERVER['REMOTE_ADDR'] ?? 'unknown');
+            
+            // Usar bindValue ao invés de bindParam para evitar problemas de referência
+            $stmt->bindValue(':user_id', $user_id);
+            $stmt->bindValue(':action', $action);
+            $stmt->bindValue(':table', $table);
+            $stmt->bindValue(':record_id', $record_id);
+            $stmt->bindValue(':old_data', $old_data);
+            $stmt->bindValue(':new_data', $new_data);
+            $stmt->bindValue(':ip', $_SERVER['REMOTE_ADDR'] ?? 'unknown');
             
             return $stmt->execute();
             

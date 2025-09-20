@@ -1,0 +1,157 @@
+:root {
+    --primary-color: #ff6b9d;
+    --secondary-color: #ffc93c;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --info-color: #06bcf4;
+}
+
+body {
+    background-color: #fef7ff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.sidebar {
+    background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    min-height: 100vh;
+    padding: 0;
+    position: fixed;
+    width: 250px;
+    z-index: 1000;
+}
+
+.sidebar .company-info {
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.sidebar .company-info i {
+    font-size: 2rem;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.sidebar .company-name {
+    color: white;
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.sidebar .nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    padding: 0.75rem 1rem;
+    margin: 0.25rem 0.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    transform: translateX(5px);
+}
+
+.main-content {
+    margin-left: 250px;
+    padding: 2rem;
+}
+
+.card {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 2px 10px rgba(255, 107, 157, 0.1);
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.badge {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+}
+
+.table {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.crianca-card {
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+}
+
+.crianca-card.inscrito {
+    border-left-color: #6c757d;
+}
+
+.crianca-card.confirmado {
+    border-left-color: var(--info-color);
+}
+
+.crianca-card.checkin {
+    border-left-color: var(--success-color);
+    background-color: #f8fff9;
+}
+
+.crianca-card.checkout {
+    border-left-color: var(--warning-color);
+    background-color: #fffdf8;
+}
+
+.crianca-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.alergia-alert {
+    background: #ffe4e1;
+    color: #d63384;
+    padding: 0.25rem 0.5rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    margin: 0.1rem;
+    display: inline-block;
+}
+
+.status-badge {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.6rem;
+}
+
+.quick-search {
+    position: sticky;
+    top: 20px;
+    z-index: 100;
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0;
+        padding: 1rem;
+    }
+
+    .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+
+    .sidebar.show {
+        transform: translateX(0);
+    }
+}

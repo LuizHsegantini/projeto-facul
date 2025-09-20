@@ -1,25 +1,83 @@
 <?php
-// login.php
-session_start();
-require_once 'config/database.php';
-require_once 'includes/auth.php';
+// login.php - Versão corrigida sem loop de redirecionamento
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-// Se já estiver logado, redirecionar para dashboard
-if (isset($_SESSION['user_id'])) {
-    header('Location: dashboard_eventos.php');
-    exit();
+// PRIMEIRO: Limpar qualquer sessão problemática ANTES de incluir auth.php
+if (session_status() !== PHP_SESSION_NONE) {
+    session_destroy();
+}
+
+// Iniciar sessão limpa
+session_start();
+$_SESSION = array();
+
+require_once 'config/database.php';
+
+// Função de login local (sem depender do auth.php problemático)
+function loginDirect($username, $password) {
+    try {
+        $database = new Database();
+        $db = $database->getConnection();
+        
+        $query = "SELECT * FROM usuarios WHERE login = :login AND senha = MD5(:senha)";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':login', $username);
+        $stmt->bindParam(':senha', $password);
+        $stmt->execute();
+        
+        if ($stmt->rowCount() > 0) {
+            $user = $stmt->fetch();
+            
+            // Limpar sessão e definir novas variáveis
+            $_SESSION = array();
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_name'] = $user['nome_completo'];
+            $_SESSION['user_email'] = $user['email'];
+            $_SESSION['user_profile'] = $user['perfil'];
+            $_SESSION['user_login'] = $user['login'];
+            $_SESSION['user_cargo'] = $user['cargo'] ?? '';
+            $_SESSION['last_activity'] = time();
+            
+            return true;
+        }
+        
+        return false;
+    } catch (PDOException $e) {
+        error_log("Erro na autenticação: " . $e->getMessage());
+        return false;
+    }
 }
 
 $error = '';
+$success = '';
+
+// Verificar mensagens da URL
+if (isset($_GET['error'])) {
+    $error = htmlspecialchars($_GET['error']);
+}
+
+if (isset($_GET['logout'])) {
+    if ($_GET['logout'] === 'emergency') {
+        $success = 'Logout de emergência realizado com sucesso.';
+    } elseif ($_GET['logout'] === 'visual_success') {
+        $success = 'Logout realizado com sucesso! Sistema limpo.';
+    } elseif ($_GET['logout'] === 'error') {
+        $error = 'Logout realizado mas com aviso: ' . ($_GET['msg'] ?? 'erro desconhecido');
+    } else {
+        $success = 'Logout realizado com sucesso.';
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
+    $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     
     if (empty($username) || empty($password)) {
         $error = 'Por favor, preencha todos os campos.';
     } else {
-        if (login($username, $password)) {
+        if (loginDirect($username, $password)) {
+            // Redirecionar para dashboard após login bem-sucedido
             header('Location: dashboard_eventos.php');
             exit();
         } else {
@@ -34,171 +92,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistema de Gestão</title>
+    <title>Login - MagicKids Eventos</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #667eea;
-            --secondary-color: #764ba2;
-        }
-        
-        body {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .login-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-        }
-        
-        .login-card {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-            overflow: hidden;
-            max-width: 400px;
-            width: 100%;
-        }
-        
-        .login-header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: white;
-            padding: 2rem;
-            text-align: center;
-        }
-        
-        .login-header i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-        
-        .login-body {
-            padding: 2rem;
-        }
-        
-        .form-control {
-            border-radius: 10px;
-            border: 2px solid #e2e8f0;
-            padding: 0.75rem 1rem;
-            transition: all 0.3s ease;
-        }
-        
-        .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        
-        .btn-login {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            border: none;
-            border-radius: 10px;
-            padding: 0.75rem 2rem;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-        }
-        
-        .input-group-text {
-            border-radius: 10px 0 0 10px;
-            border: 2px solid #e2e8f0;
-            border-right: none;
-            background: #f8fafc;
-        }
-        
-        .input-group .form-control {
-            border-radius: 0 10px 10px 0;
-            border-left: none;
-        }
-        
-        .input-group:focus-within .input-group-text {
-            border-color: var(--primary-color);
-        }
-        
-        .alert {
-            border-radius: 10px;
-            border: none;
-        }
-        
-        .demo-users {
-            background: #f8fafc;
-            border-radius: 10px;
-            padding: 1rem;
-            margin-top: 1.5rem;
-        }
-        
-        .demo-users small {
-            color: #64748b;
-        }
-        
-        .floating-shapes {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-        }
-        
-        .shape {
-            position: absolute;
-            opacity: 0.1;
-            animation: float 6s ease-in-out infinite;
-        }
-        
-        .shape:nth-child(1) {
-            top: 20%;
-            left: 10%;
-            animation-delay: 0s;
-        }
-        
-        .shape:nth-child(2) {
-            top: 60%;
-            right: 10%;
-            animation-delay: 2s;
-        }
-        
-        .shape:nth-child(3) {
-            bottom: 20%;
-            left: 20%;
-            animation-delay: 4s;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(180deg); }
-        }
-    </style>
+    <link rel="stylesheet" href="assets/css/login.css">
 </head>
 <body>
     <!-- Floating Shapes -->
     <div class="floating-shapes">
-        <i class="fas fa-project-diagram fa-4x shape"></i>
-        <i class="fas fa-tasks fa-3x shape"></i>
-        <i class="fas fa-users fa-4x shape"></i>
+        <i class="fas fa-magic fa-4x shape"></i>
+        <i class="fas fa-birthday-cake fa-3x shape"></i>
+        <i class="fas fa-child fa-4x shape"></i>
     </div>
     
     <div class="login-container">
         <div class="login-card">
             <div class="login-header">
-                <i class="fas fa-building"></i>
-                <h3 class="mb-0">TechCorp Solutions</h3>
-                <p class="mb-0 opacity-75">Sistema de Gestão de Projetos</p>
+                <i class="fas fa-magic"></i>
+                <h3>MagicKids Eventos</h3>
+                <p>Sistema de Gestão de Eventos Infantis</p>
             </div>
             
             <div class="login-body">
-                <h4 class="text-center mb-4">Faça seu Login</h4>
+                <h4>Faça seu Login</h4>
                 
                 <?php if ($error): ?>
                 <div class="alert alert-danger" role="alert">
@@ -207,7 +123,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <?php endif; ?>
                 
-                <form method="POST">
+                <?php if ($success): ?>
+                <div class="alert alert-success" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <?php echo $success; ?>
+                </div>
+                <?php endif; ?>
+                
+                <!-- Botão de Limpeza de Emergência -->
+                <?php if ($error && strpos($error, 'logado') !== false): ?>
+                <div class="alert alert-warning" role="alert">
+                    <i class="fas fa-tools me-2"></i>
+                    <strong>Problema detectado!</strong> 
+                    <a href="logout_emergency.php" class="btn btn-sm btn-warning ms-2">
+                        <i class="fas fa-broom me-1"></i>Limpar Sistema
+                    </a>
+                </div>
+                <?php endif; ?>
+                
+                <form method="POST" id="loginForm">
                     <div class="mb-3">
                         <label for="username" class="form-label">Usuário</label>
                         <div class="input-group">
@@ -228,11 +162,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </span>
                             <input type="password" class="form-control" id="password" name="password" 
                                    placeholder="Digite sua senha" required>
+                            <span class="input-group-text toggle-password" style="cursor: pointer;" title="Mostrar/Ocultar senha">
+                                <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                            </span>
                         </div>
                     </div>
                     
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-login text-white">
+                        <button type="submit" class="btn btn-login">
                             <i class="fas fa-sign-in-alt me-2"></i>
                             Entrar no Sistema
                         </button>
@@ -241,67 +178,160 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <!-- Usuários de Demonstração -->
                 <div class="demo-users">
-                    <h6 class="text-center mb-2">
+                    <h6>
                         <i class="fas fa-info-circle me-1"></i>
                         Usuários de Demonstração
                     </h6>
-                    <div class="row g-2 text-center">
+                    <div class="row">
                         <div class="col-4">
-                            <small class="d-block fw-bold">Admin</small>
-                            <small class="text-muted">admin</small><br>
-                            <small class="text-muted">123456</small>
+                            <span class="fw-bold">Admin</span>
+                            <span class="text-muted">admin</span>
+                            <span class="text-muted">123456</span>
                         </div>
                         <div class="col-4">
-                            <small class="d-block fw-bold">Gerente</small>
-                            <small class="text-muted">gerente</small><br>
-                            <small class="text-muted">123456</small>
+                            <span class="fw-bold">Coordenador</span>
+                            <span class="text-muted">gerente</span>
+                            <span class="text-muted">123456</span>
                         </div>
                         <div class="col-4">
-                            <small class="d-block fw-bold">Colaborador</small>
-                            <small class="text-muted">colaborador</small><br>
-                            <small class="text-muted">123456</small>
+                            <span class="fw-bold">Animador</span>
+                            <span class="text-muted">colaborador</span>
+                            <span class="text-muted">123456</span>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-    
+                
+                <!-- Informações de Sistema -->
+                <div class="system-info">
+                    <small class="text-muted d-block text-center">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Sistema com limpeza automática de sessões
+                    </small>
+
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Foco automático no campo de usuário
-        document.getElementById('username').focus();
+        // Limpar qualquer storage problemático ao carregar
+        try {
+            if (typeof(Storage) !== "undefined") {
+                // Limpar dados que podem estar causando conflito
+                localStorage.removeItem('user_session');
+                localStorage.removeItem('login_data');
+                sessionStorage.clear();
+            }
+        } catch (e) {
+            console.warn('Erro ao limpar storage:', e);
+        }
         
-        // Animação suave nos campos de entrada
-        document.querySelectorAll('.form-control').forEach(input => {
-            input.addEventListener('focus', function() {
-                this.parentElement.style.transform = 'scale(1.02)';
-            });
+        // Foco automático no campo de usuário
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('username').focus();
+        });
+        
+        // Funcionalidade para mostrar/ocultar senha
+        document.querySelector('.toggle-password').addEventListener('click', function() {
+            const passwordField = document.getElementById('password');
+            const icon = document.getElementById('togglePasswordIcon');
             
-            input.addEventListener('blur', function() {
-                this.parentElement.style.transform = 'scale(1)';
-            });
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
         });
         
         // Efeito de clique nos usuários demo
         document.querySelectorAll('.demo-users .col-4').forEach(userDemo => {
             userDemo.addEventListener('click', function() {
-                const username = this.querySelector('.text-muted').textContent;
+                const spans = this.querySelectorAll('.text-muted');
+                const username = spans[0].textContent;
+                const password = spans[1].textContent;
+                
                 document.getElementById('username').value = username;
-                document.getElementById('password').value = '123456';
+                document.getElementById('password').value = password;
                 document.getElementById('password').focus();
+                
+                // Efeito visual de seleção
+                this.style.background = 'rgba(255, 107, 157, 0.1)';
+                setTimeout(() => {
+                    this.style.background = '';
+                }, 300);
             });
             
             userDemo.style.cursor = 'pointer';
             userDemo.addEventListener('mouseenter', function() {
                 this.style.backgroundColor = '#e2e8f0';
                 this.style.borderRadius = '8px';
+                this.style.transform = 'scale(1.05)';
             });
             
             userDemo.addEventListener('mouseleave', function() {
                 this.style.backgroundColor = 'transparent';
+                this.style.transform = 'scale(1)';
             });
         });
+        
+        // Controle do formulário simplificado
+        let formSubmitted = false;
+        
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const submitBtn = this.querySelector('.btn-login');
+            
+            // Verificar se campos estão preenchidos
+            if (!username || !password) {
+                e.preventDefault();
+                alert('Por favor, preencha todos os campos.');
+                return false;
+            }
+            
+            // Prevenir múltiplos submits
+            if (formSubmitted) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Marcar como submetido e alterar visual do botão
+            formSubmitted = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Entrando...';
+            submitBtn.disabled = true;
+            
+            // Permitir que o formulário seja enviado normalmente
+            return true;
+        });
+        
+        // Auto-limpar mensagens após 5 segundos
+        const alertElements = document.querySelectorAll('.alert');
+        alertElements.forEach(alert => {
+            setTimeout(() => {
+                alert.style.opacity = '0';
+                alert.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    alert.remove();
+                }, 300);
+            }, 5000);
+        });
+        
+        // Limpar URL de parâmetros de erro
+        if (window.location.search) {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('logout')) {
+                // Manter logout message
+                setTimeout(() => {
+                    const newUrl = window.location.pathname;
+                    window.history.replaceState({}, document.title, newUrl);
+                }, 3000);
+            } else {
+                // Limpar outros parâmetros imediatamente
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+        }
     </script>
 </body>
 </html>

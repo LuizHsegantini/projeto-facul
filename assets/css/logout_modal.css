@@ -1,0 +1,345 @@
+/* logout_modal.css - Estilos para modal de logout integrado */
+
+:root {
+    --primary-color: #ff6b9d;
+    --secondary-color: #ffc93c;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --info-color: #06bcf4;
+    --purple-color: #8b5cf6;
+}
+
+/* Modal de Logout */
+.logout-modal {
+    border-radius: 25px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(255, 107, 157, 0.2);
+    overflow: hidden;
+}
+
+.logout-modal .modal-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: white;
+    border-radius: 25px 25px 0 0;
+    padding: 2rem;
+}
+
+.logout-icon-modal {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.logout-icon-modal i {
+    font-size: 2.5rem;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.logout-progress-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--info-color), var(--primary-color));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    box-shadow: 0 8px 25px rgba(6, 188, 244, 0.3);
+}
+
+.logout-progress-icon i {
+    font-size: 2.5rem;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.success-icon-modal {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--success-color), #34d399);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+    animation: successPulse 1s ease-in-out;
+}
+
+.success-icon-modal i {
+    font-size: 2.5rem;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes successPulse {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.btn-logout-confirm {
+    background: linear-gradient(135deg, var(--danger-color), #dc2626);
+    border: none;
+    border-radius: 15px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    color: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+.btn-logout-confirm:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+    color: white;
+}
+
+.btn-logout-confirm:active {
+    transform: translateY(0);
+}
+
+.btn-cancel-logout {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    border: none;
+    border-radius: 15px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    color: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+}
+
+.btn-cancel-logout:hover {
+    background: linear-gradient(135deg, #4b5563, #374151);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(107, 114, 128, 0.4);
+    color: white;
+}
+
+.btn-cancel-logout:active {
+    transform: translateY(0);
+}
+
+/* Progress Bar do Logout */
+.logout-progress-bar {
+    height: 12px;
+    border-radius: 15px;
+    background: rgba(255, 107, 157, 0.1);
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.logout-progress-bar .progress-bar {
+    background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+    border-radius: 15px;
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.logout-progress-bar .progress-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        left: -100%;
+    }
+
+    100% {
+        left: 100%;
+    }
+}
+
+/* Steps do Logout */
+.logout-steps {
+    background: rgba(255, 107, 157, 0.05);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    border-left: 4px solid var(--primary-color);
+}
+
+.logout-steps #step-text {
+    font-weight: 500;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+/* Modal Backdrop */
+.modal-backdrop.show {
+    background: rgba(255, 107, 157, 0.3);
+    backdrop-filter: blur(4px);
+}
+
+/* Animações de entrada e saída dos modais */
+.modal.fade .modal-dialog {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: scale(0.8) translateY(-50px);
+}
+
+.modal.show .modal-dialog {
+    transform: scale(1) translateY(0);
+}
+
+/* Efeitos de hover nos botões */
+.logout-modal .btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.logout-modal .btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease;
+}
+
+.logout-modal .btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* Spinner customizado */
+.spinner-border.text-primary {
+    color: var(--primary-color) !important;
+    width: 2rem;
+    height: 2rem;
+    border-width: 0.25em;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .logout-modal {
+        margin: 1rem;
+    }
+
+    .logout-modal .modal-header {
+        padding: 1.5rem;
+    }
+
+    .logout-icon-modal,
+    .logout-progress-icon,
+    .success-icon-modal {
+        width: 60px;
+        height: 60px;
+    }
+
+    .logout-icon-modal i,
+    .logout-progress-icon i,
+    .success-icon-modal i {
+        font-size: 2rem;
+    }
+
+    .btn-logout-confirm,
+    .btn-cancel-logout {
+        padding: 0.65rem 1.5rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Estados de loading */
+.btn-logout-confirm.loading {
+    pointer-events: none;
+    position: relative;
+    color: transparent !important;
+}
+
+.btn-logout-confirm.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Efeitos de partículas sutis */
+.logout-modal::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 20% 80%, rgba(255, 107, 157, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 199, 60, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Texto gradiente para títulos */
+.logout-modal h4 {
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.logout-modal .text-success {
+    color: var(--success-color) !important;
+}
+
+/* Melhorar legibilidade do texto */
+.logout-modal .text-muted {
+    color: #64748b !important;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+/* Adicionar sombra suave aos modais */
+.logout-modal {
+    box-shadow:
+        0 20px 60px rgba(255, 107, 157, 0.15),
+        0 8px 25px rgba(0, 0, 0, 0.1);
+}

@@ -3,6 +3,11 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+// Iniciar sessão se ainda não foi iniciada
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once 'includes/auth.php';
 require_once 'controllers/CriancasController.php';
 
@@ -37,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
             case 'delete':
                 if (hasPermission('administrador')) {
-                    $result = $criancasController->delete($_POST['id']);
+                    $result = $criancasController->forceDelete($_POST['id']);
                     if ($result) {
                         $message = 'Criança removida com sucesso!';
                         $messageType = 'success';
@@ -75,11 +80,12 @@ $search = $_GET['search'] ?? '';
 $idade_min = $_GET['idade_min'] ?? '';
 $idade_max = $_GET['idade_max'] ?? '';
 $sexo = $_GET['sexo'] ?? '';
+$status = $_GET['status'] ?? 'ativo'; // Padrão mostrar apenas ativas
 $page = (int)($_GET['page'] ?? 1);
 $limit = 15;
 
 // Buscar crianças
-$result = $criancasController->index($search, $idade_min, $idade_max, $sexo, $page, $limit);
+$result = $criancasController->index($search, $idade_min, $idade_max, $sexo, $page, $limit, $status);
 $criancas = $result['criancas'];
 $totalPages = $result['pages'];
 $currentPage = $result['current_page'];
@@ -97,11 +103,17 @@ $currentPage = $result['current_page'];
         :root {
             --primary-color: #ff6b9d;
             --secondary-color: #ffc93c;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #06bcf4;
+            --purple-color: #8b5cf6;
         }
         
         body {
-            background-color: #fef7ff;
+            background: linear-gradient(135deg, #fef7ff 0%, #f0f8ff 100%);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
         }
         
         .sidebar {
@@ -109,46 +121,67 @@ $currentPage = $result['current_page'];
             min-height: 100vh;
             padding: 0;
             position: fixed;
-            width: 250px;
+            width: 260px;
             z-index: 1000;
+            box-shadow: 4px 0 15px rgba(255, 107, 157, 0.15);
         }
         
         .sidebar .company-info {
-            padding: 1.5rem 1rem;
+            padding: 2rem 1rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             text-align: center;
+            background: rgba(255, 255, 255, 0.1);
         }
         
         .sidebar .company-info i {
-            font-size: 2rem;
+            font-size: 2.5rem;
             color: white;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
         }
         
         .sidebar .company-name {
             color: white;
             font-weight: bold;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             margin: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         
         .sidebar .nav-link {
-            color: rgba(255, 255, 255, 0.8);
-            padding: 0.75rem 1rem;
-            margin: 0.25rem 0.5rem;
-            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.85);
+            padding: 0.9rem 1.2rem;
+            margin: 0.3rem 0.5rem;
+            border-radius: 10px;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+        }
+        
+        .sidebar .nav-link i {
+            width: 20px;
+            text-align: center;
+            margin-right: 0.75rem;
         }
         
         .sidebar .nav-link:hover,
         .sidebar .nav-link.active {
-            background-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.2);
             color: white;
-            transform: translateX(5px);
+            transform: translateX(8px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         
         .main-content {
-            margin-left: 250px;
+            margin-left: 260px;
             padding: 2rem;
         }
         
@@ -212,10 +245,19 @@ $currentPage = $result['current_page'];
             animation: pulse 2s infinite;
         }
         
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
         }
     </style>
 </head>
@@ -230,51 +272,56 @@ $currentPage = $result['current_page'];
         <ul class="nav flex-column">
             <li class="nav-item">
                 <a class="nav-link" href="dashboard_eventos.php">
-                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    <i class="fas fa-tachometer-alt"></i>Dashboard
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="eventos.php">
-                    <i class="fas fa-calendar-star me-2"></i>Eventos
+                    <i class="fas fa-calendar-alt"></i>Eventos
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link active" href="criancas.php">
-                    <i class="fas fa-child me-2"></i>Crianças
+                    <i class="fas fa-child"></i>Crianças
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="cadastro_crianca.php">
-                    <i class="fas fa-user-plus me-2"></i>Cadastrar Criança
+                    <i class="fas fa-user-plus"></i>Cadastrar Criança
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="checkin.php">
-                    <i class="fas fa-clipboard-check me-2"></i>Check-in/Check-out
+                    <i class="fas fa-clipboard-check"></i>Check-in/Check-out
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="atividades.php">
-                    <i class="fas fa-gamepad me-2"></i>Atividades
+                    <i class="fas fa-gamepad"></i>Atividades
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="equipes.php">
-                    <i class="fas fa-users me-2"></i>Equipes
+                    <i class="fas fa-users"></i>Equipes
                 </a>
             </li>
             <?php if (hasPermission('administrador')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="funcionarios.php">
-                    <i class="fas fa-user-tie me-2"></i>Funcionários
+                    <i class="fas fa-user-tie"></i>Funcionários
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="relatorios.php">
-                    <i class="fas fa-chart-bar me-2"></i>Relatórios
+                    <i class="fas fa-chart-bar"></i>Relatórios
                 </a>
             </li>
             <?php endif; ?>
+            <li class="nav-item mt-auto">
+                <a class="nav-link logout-btn" href="logout.php">
+                    <i class="fas fa-sign-out-alt"></i>Sair
+                </a>
+            </li>
         </ul>
     </nav>
     
@@ -283,8 +330,20 @@ $currentPage = $result['current_page'];
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h2 class="mb-0">Gerenciamento de Crianças</h2>
-                <p class="text-muted mb-0">Visualize e gerencie todas as crianças cadastradas</p>
+                <h2 class="mb-0">
+                    Gerenciamento de Crianças
+                    <?php if ($status === 'inativo'): ?>
+                    <span class="badge bg-warning ms-2">Mostrando Inativos</span>
+                    <?php elseif ($status === 'todos'): ?>
+                    <span class="badge bg-info ms-2">Mostrando Todos</span>
+                    <?php endif; ?>
+                </h2>
+                <p class="text-muted mb-0">
+                    Visualize e gerencie todas as crianças cadastradas
+                    <?php if ($status === 'inativo'): ?>
+                    <br><small class="text-warning"><i class="fas fa-info-circle"></i> Você está vendo crianças inativas. Para ver as ativas, mude o filtro de Status.</small>
+                    <?php endif; ?>
+                </p>
             </div>
             <a href="cadastro_crianca.php" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i>Nova Criança
@@ -293,8 +352,8 @@ $currentPage = $result['current_page'];
         
         <!-- Mensagens -->
         <?php if ($message): ?>
-        <div class="alert alert-<?php echo $messageType; ?> alert-dismissible fade show" role="alert">
-            <?php echo $message; ?>
+        <div class="alert alert-<?php echo htmlspecialchars($messageType); ?> alert-dismissible fade show" role="alert">
+            <?php echo htmlspecialchars($message); ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         <?php endif; ?>
@@ -303,7 +362,7 @@ $currentPage = $result['current_page'];
         <div class="card mb-4">
             <div class="card-body">
                 <form method="GET" class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="search" class="form-label">Buscar</label>
                         <input type="text" class="form-control" id="search" name="search" 
                                value="<?php echo htmlspecialchars($search); ?>" 
@@ -321,12 +380,20 @@ $currentPage = $result['current_page'];
                                value="<?php echo htmlspecialchars($idade_max); ?>" 
                                min="1" max="18">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-1">
                         <label for="sexo" class="form-label">Sexo</label>
                         <select class="form-select" id="sexo" name="sexo">
                             <option value="">Todos</option>
                             <option value="Masculino" <?php echo $sexo === 'Masculino' ? 'selected' : ''; ?>>Masculino</option>
                             <option value="Feminino" <?php echo $sexo === 'Feminino' ? 'selected' : ''; ?>>Feminino</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="todos" <?php echo ($_GET['status'] ?? 'ativo') === 'todos' ? 'selected' : ''; ?>>Todos</option>
+                            <option value="ativo" <?php echo ($_GET['status'] ?? 'ativo') === 'ativo' ? 'selected' : ''; ?>>Ativos</option>
+                            <option value="inativo" <?php echo ($_GET['status'] ?? 'ativo') === 'inativo' ? 'selected' : ''; ?>>Inativos</option>
                         </select>
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
@@ -347,11 +414,28 @@ $currentPage = $result['current_page'];
                 <?php if (empty($criancas)): ?>
                     <div class="text-center py-5">
                         <i class="fas fa-child fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Nenhuma criança encontrada</h5>
-                        <p class="text-muted">Faça o primeiro cadastro de criança</p>
-                        <a href="cadastro_crianca.php" class="btn btn-primary">
-                            <i class="fas fa-plus me-2"></i>Cadastrar Primeira Criança
-                        </a>
+                        <?php if ($status === 'inativo'): ?>
+                            <h5 class="text-muted">Nenhuma criança inativa encontrada</h5>
+                            <p class="text-muted">Todas as crianças estão com status ativo.</p>
+                            <a href="?status=ativo" class="btn btn-primary">
+                                <i class="fas fa-eye me-2"></i>Ver Crianças Ativas
+                            </a>
+                        <?php elseif ($status === 'todos'): ?>
+                            <h5 class="text-muted">Nenhuma criança encontrada com os filtros aplicados</h5>
+                            <p class="text-muted">Tente ajustar os filtros ou limpe-os para ver todos os cadastros.</p>
+                            <a href="criancas.php" class="btn btn-outline-primary me-2">
+                                <i class="fas fa-times me-2"></i>Limpar Filtros
+                            </a>
+                            <a href="cadastro_crianca.php" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Cadastrar Criança
+                            </a>
+                        <?php else: ?>
+                            <h5 class="text-muted">Nenhuma criança encontrada</h5>
+                            <p class="text-muted">Faça o primeiro cadastro de criança</p>
+                            <a href="cadastro_crianca.php" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Cadastrar Primeira Criança
+                            </a>
+                        <?php endif; ?>
                     </div>
                 <?php else: ?>
                     <div class="row">
@@ -359,11 +443,36 @@ $currentPage = $result['current_page'];
                         <?php 
                         $isAniversario = date('m-d') === date('m-d', strtotime($crianca['data_nascimento']));
                         $temAlergia = !empty($crianca['alergia_alimentos']) || !empty($crianca['alergia_medicamentos']);
-
-                        $criancaJson = htmlspecialchars(json_encode($crianca, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
-
-                        $statusAtivo = !empty($crianca['ativo']);
-
+                        $statusAtivo = (bool)$crianca['ativo'];
+                        
+                        // Preparar dados JSON de forma segura
+                        $criancaData = [
+                            'id' => $crianca['id'],
+                            'nome_completo' => $crianca['nome_completo'],
+                            'data_nascimento' => $crianca['data_nascimento'],
+                            'idade' => $crianca['idade'],
+                            'sexo' => $crianca['sexo'],
+                            'alergia_alimentos' => $crianca['alergia_alimentos'] ?? '',
+                            'alergia_medicamentos' => $crianca['alergia_medicamentos'] ?? '',
+                            'restricoes_alimentares' => $crianca['restricoes_alimentares'] ?? '',
+                            'observacoes_saude' => $crianca['observacoes_saude'] ?? '',
+                            'nome_responsavel' => $crianca['nome_responsavel'],
+                            'grau_parentesco' => $crianca['grau_parentesco'] ?? '',
+                            'telefone_principal' => $crianca['telefone_principal'],
+                            'telefone_alternativo' => $crianca['telefone_alternativo'] ?? '',
+                            'endereco_completo' => $crianca['endereco_completo'] ?? '',
+                            'documento_rg_cpf' => $crianca['documento_rg_cpf'] ?? '',
+                            'email_responsavel' => $crianca['email_responsavel'] ?? '',
+                            'nome_emergencia' => $crianca['nome_emergencia'],
+                            'telefone_emergencia' => $crianca['telefone_emergencia'] ?? '',
+                            'grau_parentesco_emergencia' => $crianca['grau_parentesco_emergencia'] ?? '',
+                            'autorizacao_retirada' => $crianca['autorizacao_retirada'] ?? '',
+                            'data_cadastro' => $crianca['data_cadastro'] ?? '',
+                            'data_atualizacao' => $crianca['data_atualizacao'] ?? '',
+                            'ativo' => $statusAtivo
+                        ];
+                        
+                        $criancaJson = htmlspecialchars(json_encode($criancaData, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
                         $nomeSeguro = htmlspecialchars($crianca['nome_completo'], ENT_QUOTES, 'UTF-8');
                         ?>
                         <div class="col-lg-6 col-xl-4 mb-4">
@@ -388,19 +497,31 @@ $currentPage = $result['current_page'];
                                                     </p>
                                                 </div>
                                                 <div class="btn-group btn-group-sm" role="group">
-                                                    <button type="button" class="btn btn-outline-primary" title="Ver detalhes" data-bs-toggle="modal" data-bs-target="#detailsModal" data-crianca="<?php echo $criancaJson; ?>">
+                                                    <button type="button" class="btn btn-outline-primary" title="Ver detalhes" 
+                                                            data-bs-toggle="modal" data-bs-target="#detailsModal" 
+                                                            data-crianca="<?php echo $criancaJson; ?>">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
                                                     <?php if (hasPermission('coordenador') || hasPermission('administrador')): ?>
-                                                    <button type="button" class="btn btn-outline-secondary" title="Editar cadastro" data-bs-toggle="modal" data-bs-target="#editModal" data-crianca="<?php echo $criancaJson; ?>">
+                                                    <button type="button" class="btn btn-outline-secondary" title="Editar cadastro" 
+                                                            data-bs-toggle="modal" data-bs-target="#editModal" 
+                                                            data-crianca="<?php echo $criancaJson; ?>">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
-                                                    <button type="button" class="btn btn-outline-warning" title="<?php echo $statusAtivo ? 'Desativar' : 'Ativar'; ?> crianca" data-bs-toggle="modal" data-bs-target="#statusModal" data-id="<?php echo (int) $crianca['id']; ?>" data-nome="<?php echo $nomeSeguro; ?>" data-ativo="<?php echo $statusAtivo ? '1' : '0'; ?>">
+                                                    <button type="button" class="btn btn-outline-warning" 
+                                                            title="<?php echo $statusAtivo ? 'Desativar' : 'Ativar'; ?> criança" 
+                                                            data-bs-toggle="modal" data-bs-target="#statusModal" 
+                                                            data-id="<?php echo (int)$crianca['id']; ?>" 
+                                                            data-nome="<?php echo $nomeSeguro; ?>" 
+                                                            data-ativo="<?php echo $statusAtivo ? '1' : '0'; ?>">
                                                         <i class="fas fa-<?php echo $statusAtivo ? 'ban' : 'check'; ?>"></i>
                                                     </button>
                                                     <?php endif; ?>
                                                     <?php if (hasPermission('administrador')): ?>
-                                                    <button type="button" class="btn btn-outline-danger" title="Excluir cadastro" data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="<?php echo (int) $crianca['id']; ?>" data-nome="<?php echo $nomeSeguro; ?>">
+                                                    <button type="button" class="btn btn-outline-danger" title="Excluir cadastro" 
+                                                            data-bs-toggle="modal" data-bs-target="#deleteModal" 
+                                                            data-id="<?php echo (int)$crianca['id']; ?>" 
+                                                            data-nome="<?php echo $nomeSeguro; ?>">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                     <?php endif; ?>
@@ -439,8 +560,8 @@ $currentPage = $result['current_page'];
                                             <?php endif; ?>
                                             
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <span class="badge bg-<?php echo $crianca['ativo'] ? 'success' : 'secondary'; ?>">
-                                                    <?php echo $crianca['ativo'] ? 'Ativo' : 'Inativo'; ?>
+                                                <span class="badge bg-<?php echo $statusAtivo ? 'success' : 'secondary'; ?>">
+                                                    <?php echo $statusAtivo ? 'Ativo' : 'Inativo'; ?>
                                                 </span>
                                                 
                                                 <?php if ($isAniversario): ?>
@@ -464,7 +585,7 @@ $currentPage = $result['current_page'];
                         <ul class="pagination justify-content-center mt-4">
                             <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                             <li class="page-item <?php echo $i === $currentPage ? 'active' : ''; ?>">
-                                <a class="page-link" href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&idade_min=<?php echo urlencode($idade_min); ?>&idade_max=<?php echo urlencode($idade_max); ?>&sexo=<?php echo urlencode($sexo); ?>">
+                                <a class="page-link" href="?page=<?php echo $i; ?>&search=<?php echo urlencode($search); ?>&idade_min=<?php echo urlencode($idade_min); ?>&idade_max=<?php echo urlencode($idade_max); ?>&sexo=<?php echo urlencode($sexo); ?>&status=<?php echo urlencode($status); ?>">
                                     <?php echo $i; ?>
                                 </a>
                             </li>
@@ -506,7 +627,26 @@ $currentPage = $result['current_page'];
                         <input type="hidden" id="editId" name="id">
                         
                         <div class="row g-3">
-                            <div class="col-12">
+                            <div class="col-md-6">
+                                <label for="editNomeCompleto" class="form-label">Nome Completo</label>
+                                <input type="text" class="form-control" id="editNomeCompleto" name="nome_completo" required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="editDataNascimento" class="form-label">Data de Nascimento</label>
+                                <input type="date" class="form-control" id="editDataNascimento" name="data_nascimento" required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="editSexo" class="form-label">Sexo</label>
+                                <select class="form-select" id="editSexo" name="sexo" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="Masculino">Masculino</option>
+                                    <option value="Feminino">Feminino</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
                                 <label for="editResponsavel" class="form-label">Nome do Responsável</label>
                                 <input type="text" class="form-control" id="editResponsavel" name="nome_responsavel" required>
                             </div>
@@ -519,6 +659,21 @@ $currentPage = $result['current_page'];
                             <div class="col-md-6">
                                 <label for="editEmergencia" class="form-label">Contato de Emergência</label>
                                 <input type="text" class="form-control" id="editEmergencia" name="nome_emergencia" required>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label for="editAlergiaAlimentos" class="form-label">Alergia a Alimentos</label>
+                                <input type="text" class="form-control" id="editAlergiaAlimentos" name="alergia_alimentos">
+                            </div>
+                            
+                            <div class="col-12">
+                                <label for="editAlergiaMedicamentos" class="form-label">Alergia a Medicamentos</label>
+                                <input type="text" class="form-control" id="editAlergiaMedicamentos" name="alergia_medicamentos">
+                            </div>
+                            
+                            <div class="col-12">
+                                <label for="editObservacoes" class="form-label">Observações de Saúde</label>
+                                <textarea class="form-control" id="editObservacoes" name="observacoes_saude" rows="2"></textarea>
                             </div>
                         </div>
                     </div>
@@ -538,12 +693,12 @@ $currentPage = $result['current_page'];
                 <input type="hidden" name="action" value="toggle_status">
                 <input type="hidden" id="statusCriancaId" name="id">
                 <div class="modal-header">
-                    <h5 class="modal-title">Alterar status</h5>
+                    <h5 class="modal-title">Alterar Status</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <p class="mb-0">Deseja <span id="statusActionLabel"></span> o cadastro de <strong id="statusCriancaNome"></strong>?</p>
-                    <p class="text-muted small mb-0">Esta operacao pode ser revertida a qualquer momento.</p>
+                    <p class="text-muted small mb-0">Esta operação pode ser revertida a qualquer momento.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -562,15 +717,21 @@ $currentPage = $result['current_page'];
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Atenção!</strong> Esta ação irá excluir permanentemente o cadastro.
+                    </div>
                     <p>Tem certeza que deseja excluir o cadastro de <strong id="deleteCriancaName"></strong>?</p>
-                    <p class="text-danger"><small>Esta ação não pode ser desfeita e removerá todos os dados da criança do sistema.</small></p>
+                    <p class="text-danger"><small><strong>Esta ação não pode ser desfeita</strong> e removerá todos os dados da criança do sistema, incluindo histórico de eventos.</small></p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <form method="POST" style="display: inline;">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" id="deleteCriancaId" name="id">
-                        <button type="submit" class="btn btn-danger">Excluir</button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>Excluir Permanentemente
+                        </button>
                     </form>
                 </div>
             </div>
@@ -580,185 +741,249 @@ $currentPage = $result['current_page'];
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
+            
             function parseCrianca(button) {
                 var payload = button.getAttribute('data-crianca');
                 if (!payload) {
+                    console.error('Dados da criança não encontrados');
                     return null;
                 }
                 try {
                     return JSON.parse(payload);
                 } catch (error) {
-                    console.error('Erro ao converter dados da crianca', error);
+                    console.error('Erro ao converter dados da criança:', error);
                     return null;
                 }
             }
 
             function formatDate(value) {
-                if (!value) {
+                if (!value || value === '0000-00-00') {
                     return '-';
                 }
-                var date = new Date(value);
-                if (Number.isNaN(date.getTime())) {
+                try {
+                    var date = new Date(value + 'T00:00:00');
+                    if (isNaN(date.getTime())) {
+                        return value;
+                    }
+                    return date.toLocaleDateString('pt-BR');
+                } catch (e) {
                     return value;
                 }
-                return date.toLocaleDateString('pt-BR');
             }
 
             function formatDateTime(value) {
                 if (!value) {
                     return '-';
                 }
-                var date = new Date(value);
-                if (Number.isNaN(date.getTime())) {
+                try {
+                    var date = new Date(value);
+                    if (isNaN(date.getTime())) {
+                        return value;
+                    }
+                    return date.toLocaleString('pt-BR');
+                } catch (e) {
                     return value;
                 }
-                return date.toLocaleString('pt-BR');
             }
 
+            function escapeHtml(unsafe) {
+                if (unsafe == null || unsafe === undefined) {
+                    return '';
+                }
+                return String(unsafe)
+                     .replace(/&/g, "&amp;")
+                     .replace(/</g, "&lt;")
+                     .replace(/>/g, "&gt;")
+                     .replace(/"/g, "&quot;")
+                     .replace(/'/g, "&#039;");
+            }
+
+            // Modal de detalhes
             var detailsModal = document.getElementById('detailsModal');
             if (detailsModal) {
-                detailsModal.addEventListener('show.bs.modal', function (event) {
+                detailsModal.addEventListener('show.bs.modal', function(event) {
                     var button = event.relatedTarget;
-                    if (!button) {
-                        return;
-                    }
+                    if (!button) return;
+                    
                     var crianca = parseCrianca(button);
-                    if (!crianca) {
-                        return;
-                    }
+                    if (!crianca) return;
+
                     var content = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Dados da Crianca</h6>
-                        <p><strong>Nome:</strong> ${crianca.nome_completo || '-'}</p>
-                        <p><strong>Data de nascimento:</strong> ${formatDate(crianca.data_nascimento)}</p>
-                        <p><strong>Idade:</strong> ${crianca.idade || '-'} anos</p>
-                        <p><strong>Sexo:</strong> ${crianca.sexo || '-'}</p>
-                        ${crianca.alergia_alimentos ? `<p><strong>Alergia a alimentos:</strong> <span class="text-danger">${crianca.alergia_alimentos}</span></p>` : ``}
-                        ${crianca.alergia_medicamentos ? `<p><strong>Alergia a medicamentos:</strong> <span class="text-danger">${crianca.alergia_medicamentos}</span></p>` : ``}
-                        ${crianca.restricoes_alimentares ? `<p><strong>Restricoes alimentares:</strong> ${crianca.restricoes_alimentares}</p>` : ``}
-                        ${crianca.observacoes_saude ? `<p><strong>Observacoes de saude:</strong> ${crianca.observacoes_saude}</p>` : ``}
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Dados do responsavel</h6>
-                        <p><strong>Nome:</strong> ${crianca.nome_responsavel || '-'}</p>
-                        <p><strong>Grau de parentesco:</strong> ${crianca.grau_parentesco || '-'}</p>
-                        <p><strong>Telefone principal:</strong> ${crianca.telefone_principal || '-'}</p>
-                        ${crianca.telefone_alternativo ? `<p><strong>Telefone alternativo:</strong> ${crianca.telefone_alternativo}</p>` : ``}
-                        <p><strong>Endereco:</strong> ${crianca.endereco_completo || '-'}</p>
-                        <p><strong>Documento:</strong> ${crianca.documento_rg_cpf || '-'}</p>
-                        ${crianca.email_responsavel ? `<p><strong>E-mail:</strong> ${crianca.email_responsavel}</p>` : ``}
-                        <h6 class="mt-3">Contato de emergencia</h6>
-                        <p><strong>Nome:</strong> ${crianca.nome_emergencia || '-'}</p>
-                        <p><strong>Telefone:</strong> ${crianca.telefone_emergencia || '-'}</p>
-                        <p><strong>Parentesco:</strong> ${crianca.grau_parentesco_emergencia || '-'}</p>
-                        <p><strong>Autorizacao para retirada:</strong> ${crianca.autorizacao_retirada || '-'}</p>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <small class="text-muted">
-                        Cadastrado em: ${formatDateTime(crianca.data_cadastro)}<br>
-                        Ultima atualizacao: ${formatDateTime(crianca.data_atualizacao)}
-                    </small>
-                </div>
-            `;
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Dados da Criança</h6>
+                                <p><strong>Nome:</strong> ${escapeHtml(crianca.nome_completo || '-')}</p>
+                                <p><strong>Data de nascimento:</strong> ${formatDate(crianca.data_nascimento)}</p>
+                                <p><strong>Idade:</strong> ${crianca.idade || '-'} anos</p>
+                                <p><strong>Sexo:</strong> ${escapeHtml(crianca.sexo || '-')}</p>
+                                ${crianca.alergia_alimentos ? `<p><strong>Alergia a alimentos:</strong> <span class="text-danger">${escapeHtml(crianca.alergia_alimentos)}</span></p>` : ''}
+                                ${crianca.alergia_medicamentos ? `<p><strong>Alergia a medicamentos:</strong> <span class="text-danger">${escapeHtml(crianca.alergia_medicamentos)}</span></p>` : ''}
+                                ${crianca.restricoes_alimentares ? `<p><strong>Restrições alimentares:</strong> ${escapeHtml(crianca.restricoes_alimentares)}</p>` : ''}
+                                ${crianca.observacoes_saude ? `<p><strong>Observações de saúde:</strong> ${escapeHtml(crianca.observacoes_saude)}</p>` : ''}
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Dados do Responsável</h6>
+                                <p><strong>Nome:</strong> ${escapeHtml(crianca.nome_responsavel || '-')}</p>
+                                <p><strong>Grau de parentesco:</strong> ${escapeHtml(crianca.grau_parentesco || '-')}</p>
+                                <p><strong>Telefone principal:</strong> ${escapeHtml(crianca.telefone_principal || '-')}</p>
+                                ${crianca.telefone_alternativo ? `<p><strong>Telefone alternativo:</strong> ${escapeHtml(crianca.telefone_alternativo)}</p>` : ''}
+                                <p><strong>Endereço:</strong> ${escapeHtml(crianca.endereco_completo || '-')}</p>
+                                <p><strong>Documento:</strong> ${escapeHtml(crianca.documento_rg_cpf || '-')}</p>
+                                ${crianca.email_responsavel ? `<p><strong>E-mail:</strong> ${escapeHtml(crianca.email_responsavel)}</p>` : ''}
+                                
+                                <h6 class="mt-3">Contato de Emergência</h6>
+                                <p><strong>Nome:</strong> ${escapeHtml(crianca.nome_emergencia || '-')}</p>
+                                <p><strong>Telefone:</strong> ${escapeHtml(crianca.telefone_emergencia || '-')}</p>
+                                <p><strong>Parentesco:</strong> ${escapeHtml(crianca.grau_parentesco_emergencia || '-')}</p>
+                                <p><strong>Autorização para retirada:</strong> ${escapeHtml(crianca.autorizacao_retirada || '-')}</p>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                Cadastrado em: ${formatDateTime(crianca.data_cadastro)}<br>
+                                Última atualização: ${formatDateTime(crianca.data_atualizacao)}
+                            </small>
+                        </div>
+                    `;
+                    
                     detailsModal.querySelector('#detailsContent').innerHTML = content;
                 });
             }
 
+            // Modal de edição
             var editModal = document.getElementById('editModal');
             if (editModal) {
-                editModal.addEventListener('show.bs.modal', function (event) {
+                editModal.addEventListener('show.bs.modal', function(event) {
                     var button = event.relatedTarget;
-                    if (!button) {
-                        return;
-                    }
+                    if (!button) return;
+                    
                     var crianca = parseCrianca(button);
-                    if (!crianca) {
-                        return;
+                    if (!crianca) return;
+
+                    // Preencher campos do formulário
+                    var form = editModal.querySelector('#editForm');
+                    if (form) {
+                        var fields = {
+                            editId: crianca.id || '',
+                            editNomeCompleto: crianca.nome_completo || '',
+                            editDataNascimento: crianca.data_nascimento || '',
+                            editSexo: crianca.sexo || '',
+                            editResponsavel: crianca.nome_responsavel || '',
+                            editTelefone: crianca.telefone_principal || '',
+                            editEmergencia: crianca.nome_emergencia || '',
+                            editAlergiaAlimentos: crianca.alergia_alimentos || '',
+                            editAlergiaMedicamentos: crianca.alergia_medicamentos || '',
+                            editObservacoes: crianca.observacoes_saude || ''
+                        };
+
+                        Object.keys(fields).forEach(function(fieldId) {
+                            var field = form.querySelector('#' + fieldId);
+                            if (field) {
+                                field.value = fields[fieldId];
+                            }
+                        });
                     }
-                    var fieldId = editModal.querySelector('#editId');
-                    if (fieldId) { fieldId.value = crianca.id || ''; }
-                    var fieldResponsavel = editModal.querySelector('#editResponsavel');
-                    if (fieldResponsavel) { fieldResponsavel.value = crianca.nome_responsavel || ''; }
-                    var fieldTelefone = editModal.querySelector('#editTelefone');
-                    if (fieldTelefone) { fieldTelefone.value = crianca.telefone_principal || ''; }
-                    var fieldEmergencia = editModal.querySelector('#editEmergencia');
-                    if (fieldEmergencia) { fieldEmergencia.value = crianca.nome_emergencia || ''; }
                 });
             }
 
+            // Modal de exclusão
             var deleteModal = document.getElementById('deleteModal');
             if (deleteModal) {
-                deleteModal.addEventListener('show.bs.modal', function (event) {
+                deleteModal.addEventListener('show.bs.modal', function(event) {
                     var button = event.relatedTarget;
-                    if (!button) {
-                        return;
-                    }
+                    if (!button) return;
+
                     var idField = deleteModal.querySelector('#deleteCriancaId');
-                    if (idField) { idField.value = button.getAttribute('data-id') || ''; }
                     var nameField = deleteModal.querySelector('#deleteCriancaName');
-                    if (nameField) { nameField.textContent = button.getAttribute('data-nome') || ''; }
+                    
+                    if (idField) idField.value = button.getAttribute('data-id') || '';
+                    if (nameField) nameField.textContent = button.getAttribute('data-nome') || '';
                 });
             }
 
+            // Modal de status
             var statusModal = document.getElementById('statusModal');
             if (statusModal) {
-                statusModal.addEventListener('show.bs.modal', function (event) {
+                statusModal.addEventListener('show.bs.modal', function(event) {
                     var button = event.relatedTarget;
-                    if (!button) {
-                        return;
-                    }
+                    if (!button) return;
+
                     var ativo = button.getAttribute('data-ativo') === '1';
                     var idField = statusModal.querySelector('#statusCriancaId');
-                    if (idField) { idField.value = button.getAttribute('data-id') || ''; }
                     var nameField = statusModal.querySelector('#statusCriancaNome');
-                    if (nameField) { nameField.textContent = button.getAttribute('data-nome') || ''; }
                     var actionLabel = statusModal.querySelector('#statusActionLabel');
-                    if (actionLabel) { actionLabel.textContent = ativo ? 'desativar' : 'ativar'; }
                     var confirmBtn = statusModal.querySelector('#statusConfirmButton');
+                    
+                    if (idField) idField.value = button.getAttribute('data-id') || '';
+                    if (nameField) nameField.textContent = button.getAttribute('data-nome') || '';
+                    if (actionLabel) actionLabel.textContent = ativo ? 'desativar' : 'ativar';
+                    
                     if (confirmBtn) {
                         confirmBtn.textContent = ativo ? 'Desativar' : 'Ativar';
-                        confirmBtn.classList.toggle('btn-danger', ativo);
-                        confirmBtn.classList.toggle('btn-success', !ativo);
+                        confirmBtn.className = ativo ? 'btn btn-warning' : 'btn btn-success';
                     }
                 });
             }
 
+            // Formatação de telefone
             var editTelefone = document.getElementById('editTelefone');
             if (editTelefone) {
-                editTelefone.addEventListener('input', function () {
+                editTelefone.addEventListener('input', function() {
                     formatPhone(this);
                 });
             }
 
+            // Validação de data de nascimento
             var editDataNascimento = document.getElementById('editDataNascimento');
             if (editDataNascimento) {
-                editDataNascimento.addEventListener('change', function () {
+                editDataNascimento.addEventListener('change', function() {
                     var birthDate = new Date(this.value);
                     var today = new Date();
                     var age = today.getFullYear() - birthDate.getFullYear();
-                    if (age > 12) {
-                        alert('Este sistema e destinado a criancas ate 12 anos.');
-                    } else if (age < 1) {
-                        alert('A crianca deve ter pelo menos 1 ano.');
+                    var monthDiff = today.getMonth() - birthDate.getMonth();
+                    
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                        age--;
+                    }
+                    
+                    if (age > 18) {
+                        alert('Este sistema é destinado a crianças até 18 anos.');
+                        this.value = '';
+                    } else if (age < 0) {
+                        alert('A data de nascimento não pode ser no futuro.');
+                        this.value = '';
                     }
                 });
             }
         });
 
+        // Função para formatação de telefone
         function formatPhone(input) {
             var value = input.value.replace(/\D/g, '');
+            
             if (value.length >= 11) {
+                // Celular: (XX) XXXXX-XXXX
                 value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-            } else if (value.length >= 7) {
+            } else if (value.length >= 10) {
+                // Fixo: (XX) XXXX-XXXX
+                value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+            } else if (value.length >= 6) {
                 value = value.replace(/(\d{2})(\d{4})(\d+)/, '($1) $2-$3');
             } else if (value.length >= 3) {
                 value = value.replace(/(\d{2})(\d+)/, '($1) $2');
             }
+            
             input.value = value;
         }
+
+        // Auto-dismiss alerts após 5 segundos
+        document.querySelectorAll('.alert').forEach(function(alert) {
+            setTimeout(function() {
+                var bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                bsAlert.close();
+            }, 5000);
+        });
     </script>
 
 </body>

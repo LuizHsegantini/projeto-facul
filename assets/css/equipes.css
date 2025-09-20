@@ -1,0 +1,128 @@
+:root {
+    --primary-color: #ff6b9d;
+    --accent-color: #0ea5e9;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+}
+
+body {
+    background-color: #fef7ff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.sidebar {
+    background: linear-gradient(180deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    min-height: 100vh;
+    width: 250px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #ffffff;
+}
+
+.sidebar .company-info {
+    padding: 1.5rem 1rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.sidebar nav {
+    padding: 1.5rem 1rem;
+}
+
+.sidebar .nav-link {
+    color: rgba(255, 255, 255, 0.85);
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    transform: translateX(6px);
+}
+
+.main-content {
+    margin-left: 250px;
+    padding: 2rem;
+}
+
+.header-bar {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 10px 30px rgba(14, 165, 233, 0.12);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stat-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: 0 10px 30px rgba(14, 165, 233, 0.08);
+    border-left: 4px solid var(--primary-color);
+    height: 100%;
+}
+
+.stat-card.accent {
+    border-left-color: var(--accent-color);
+}
+
+.stat-card.success {
+    border-left-color: var(--success-color);
+}
+
+.team-card {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 1.5rem;
+    box-shadow: 0 12px 32px rgba(14, 165, 233, 0.12);
+    border: none;
+    position: relative;
+}
+
+.team-card:hover {
+    transform: translateY(-3px);
+    transition: transform 0.2s ease;
+}
+
+.member-badge {
+    background: rgba(14, 165, 233, 0.12);
+    color: #0c4a6e;
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.member-badge button {
+    border: none;
+    background: transparent;
+    color: inherit;
+    padding: 0;
+}
+
+.tag {
+    background: rgba(16, 185, 129, 0.12);
+    color: #047857;
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
