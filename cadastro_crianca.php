@@ -321,19 +321,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
         
         // Validar idade mínima e máxima
-        document.getElementById('data_nascimento').addEventListener('change', function() {
-            const birthDate = new Date(this.value);
-            const today = new Date();
-            const age = today.getFullYear() - birthDate.getFullYear();
-            
-            if (age > 12) {
-                alert('Este sistema é destinado a crianças até 12 anos.');
-                this.value = '';
-            } else if (age < 1) {
-                alert('A criança deve ter pelo menos 1 ano.');
-                this.value = '';
-            }
-        });
+        const campoData = document.getElementById('data_nascimento');
+
+function validarData() {
+    const val = campoData.value;
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+        return; // data incompleta → não valida
+    }
+
+    const parts = val.split('-').map(Number);
+    const birthDate = new Date(parts[0], parts[1] - 1, parts[2]);
+
+    if (
+        birthDate.getFullYear() !== parts[0] ||
+        birthDate.getMonth() !== parts[1] - 1 ||
+        birthDate.getDate() !== parts[2]
+    ) {
+        alert('Data de nascimento inválida.');
+        campoData.value = '';
+        return;
+    }
+
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+
+    if (age < 1) {
+        alert('A criança deve ter pelo menos 1 ano completo.');
+        campoData.value = '';
+    } else if (age > 12) {
+        alert('Este sistema é destinado apenas a crianças de até 12 anos.');
+        campoData.value = '';
+    }
+}
+
+// dispara validação ao sair do campo (mouse ou TAB)
+campoData.addEventListener('blur', validarData);
+
+// dispara validação especificamente ao pressionar TAB
+campoData.addEventListener('keydown', function(e) {
+    if (e.key === 'Tab') {
+        validarData();
+    }
+});
+
         
         // Validação do formulário
         document.getElementById('kidsForm').addEventListener('submit', function(e) {
