@@ -223,7 +223,7 @@ if (isset($_GET['id'])) {
                     <i class="fas fa-arrow-left me-2"></i>Voltar
                 </a>
                 <?php if (hasPermission('coordenador') || hasPermission('administrador')): ?>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editEventoModal">
+                <button class="btn btn-primary" onclick="editEventoDetalhes()">
                     <i class="fas fa-edit me-2"></i>Editar
                 </button>
                 <?php endif; ?>
@@ -375,6 +375,12 @@ if (isset($_GET['id'])) {
                 <?php endif; ?>
             </div>
         </div>
+        
+        <!-- Script para inserir dados do evento atual no JavaScript -->
+        <script>
+            // Dados do evento atual para usar no JavaScript
+            window.eventoAtualDetalhes = <?php echo json_encode($evento_detalhes); ?>;
+        </script>
         
         <?php else: ?>
         <!-- Lista de Eventos -->
@@ -921,6 +927,16 @@ if (isset($_GET['id'])) {
         let currentEventData = null;
         let currentCriancaData = null;
         
+        // Função específica para editar evento na página de detalhes
+        function editEventoDetalhes() {
+            if (window.eventoAtualDetalhes) {
+                editEvento(window.eventoAtualDetalhes);
+            } else {
+                console.error('Dados do evento não encontrados');
+                alert('Erro: Não foi possível carregar os dados do evento para edição.');
+            }
+        }
+        
         // Função para mostrar ações do evento
         function showEventoActions(evento) {
             currentEventData = evento;
@@ -985,24 +1001,42 @@ if (isset($_GET['id'])) {
                 removeCrianca(currentCriancaData.eventoId, currentCriancaData.criancaId, currentCriancaData.nome);
             }
         }
+        
         function editEvento(evento) {
-            document.getElementById('editEventoId').value = evento.id;
-            document.getElementById('editNome').value = evento.nome;
-            document.getElementById('editTipoEvento').value = evento.tipo_evento;
-            document.getElementById('editCoordenador').value = evento.coordenador_id;
+            // Debug: verificar se o evento tem todos os campos necessários
+            console.log('Editando evento:', evento);
+            
+            // Verificar se o evento tem as propriedades necessárias
+            if (!evento || typeof evento !== 'object') {
+                console.error('Objeto evento inválido:', evento);
+                alert('Erro: Dados do evento não encontrados.');
+                return;
+            }
+            
+            // Preencher os campos do formulário
+            document.getElementById('editEventoId').value = evento.id || '';
+            document.getElementById('editNome').value = evento.nome || '';
+            document.getElementById('editTipoEvento').value = evento.tipo_evento || '';
+            document.getElementById('editCoordenador').value = evento.coordenador_id || '';
             document.getElementById('editDescricao').value = evento.descricao || '';
             
             // Formato da data para datetime-local
-            const dataInicio = new Date(evento.data_inicio);
-            document.getElementById('editDataInicio').value = dataInicio.toISOString().slice(0, 16);
+            if (evento.data_inicio) {
+                const dataInicio = new Date(evento.data_inicio);
+                // Ajustar para timezone local
+                const offsetMs = dataInicio.getTimezoneOffset() * 60 * 1000;
+                const localDate = new Date(dataInicio.getTime() - offsetMs);
+                document.getElementById('editDataInicio').value = localDate.toISOString().slice(0, 16);
+            }
             
-            document.getElementById('editDuracao').value = evento.duracao_horas;
-            document.getElementById('editIdadeMin').value = evento.faixa_etaria_min;
-            document.getElementById('editIdadeMax').value = evento.faixa_etaria_max;
-            document.getElementById('editCapacidade').value = evento.capacidade_maxima;
-            document.getElementById('editLocal').value = evento.local_evento;
-            document.getElementById('editStatus').value = evento.status;
+            document.getElementById('editDuracao').value = evento.duracao_horas || '';
+            document.getElementById('editIdadeMin').value = evento.faixa_etaria_min || '';
+            document.getElementById('editIdadeMax').value = evento.faixa_etaria_max || '';
+            document.getElementById('editCapacidade').value = evento.capacidade_maxima || '';
+            document.getElementById('editLocal').value = evento.local_evento || '';
+            document.getElementById('editStatus').value = evento.status || 'planejado';
             
+            // Abrir o modal
             new bootstrap.Modal(document.getElementById('editEventoModal')).show();
         }
         

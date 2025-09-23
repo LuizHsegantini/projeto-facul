@@ -37,6 +37,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $grau_parentesco_emergencia = $_POST['grau_parentesco_emergencia'];
         $autorizacao_retirada = $_POST['autorizacao_retirada'];
         
+        // Validar CPF
+        if (!validarCPF($documento_rg_cpf)) {
+            throw new Exception('CPF inválido. Verifique os dados informados.');
+        }
+        
         // Calcular idade automaticamente
         $idade = date_diff(date_create($data_nascimento), date_create('today'))->y;
         
@@ -90,6 +95,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Erro no sistema: ' . $e->getMessage();
         $messageType = 'danger';
     }
+}
+
+// Função para validar CPF usando algoritmo MOD 11
+function validarCPF($cpf) {
+    // Remove pontos, traços e espaços
+    $cpf = preg_replace('/[^0-9]/', '', $cpf);
+    
+    // Verifica se tem 11 dígitos
+    if (strlen($cpf) != 11) {
+        return false;
+    }
+    
+    // Verifica se não é uma sequência de números iguais
+    if (preg_match('/(\d)\1{10}/', $cpf)) {
+        return false;
+    }
+    
+    // Calcula o primeiro dígito verificador
+    $soma = 0;
+    for ($i = 0; $i < 9; $i++) {
+        $soma += $cpf[$i] * (10 - $i);
+    }
+    $resto = $soma % 11;
+    $digito1 = $resto < 2 ? 0 : 11 - $resto;
+    
+    // Verifica o primeiro dígito
+    if ($cpf[9] != $digito1) {
+        return false;
+    }
+    
+    // Calcula o segundo dígito verificador
+    $soma = 0;
+    for ($i = 0; $i < 10; $i++) {
+        $soma += $cpf[$i] * (11 - $i);
+    }
+    $resto = $soma % 11;
+    $digito2 = $resto < 2 ? 0 : 11 - $resto;
+    
+    // Verifica o segundo dígito
+    return $cpf[10] == $digito2;
 }
 ?>
 
@@ -233,10 +278,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     
                     <div class="col-md-6">
-                        <label for="documento_rg_cpf" class="form-label">RG/CPF <span class="required">*</span></label>
+                        <label for="documento_rg_cpf" class="form-label">CPF <span class="required">*</span></label>
                         <input type="text" class="form-control" id="documento_rg_cpf" name="documento_rg_cpf" required
-                               placeholder="000.000.000-00 ou 00.000.000-0"
+                               placeholder="000.000.000-00" maxlength="14"
                                value="<?php echo htmlspecialchars($_POST['documento_rg_cpf'] ?? ''); ?>">
+                        <div class="invalid-feedback" id="cpf-feedback">
+                            CPF inválido. Verifique os números digitados.
+                        </div>
                     </div>
                     
                     <div class="col-md-6">
@@ -307,6 +355,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             input.value = value;
         }
         
+        // Máscara e validação para CPF
+        function formatCPF(input) {
+            let value = input.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                if (value.length < 14) {
+                    value = value.replace(/(\d{3})(\d{3})(\d+)/, '$1.$2.$3');
+                    if (value.length < 11) {
+                        value = value.replace(/(\d{3})(\d+)/, '$1.$2');
+                    }
+                }
+            }
+            input.value = value;
+        }
+        
+        // Validação CPF usando algoritmo MOD 11
+        function validarCPF(cpf) {
+            cpf = cpf.replace(/[^\d]/g, '');
+            
+            if (cpf.length !== 11) return false;
+            
+            // Verifica se todos os dígitos são iguais
+            if (/^(\d)\1{10}$/.test(cpf)) return false;
+            
+            // Calcula primeiro dígito verificador
+            let soma = 0;
+            for (let i = 0; i < 9; i++) {
+                soma += parseInt(cpf.charAt(i)) * (10 - i);
+            }
+            let resto = soma % 11;
+            let digito1 = resto < 2 ? 0 : 11 - resto;
+            
+            if (parseInt(cpf.charAt(9)) !== digito1) return false;
+            
+            // Calcula segundo dígito verificador
+            soma = 0;
+            for (let i = 0; i < 10; i++) {
+                soma += parseInt(cpf.charAt(i)) * (11 - i);
+            }
+            resto = soma % 11;
+            let digito2 = resto < 2 ? 0 : 11 - resto;
+            
+            return parseInt(cpf.charAt(10)) === digito2;
+        }
+        
         // Aplicar máscara aos campos de telefone
         document.getElementById('telefone_principal').addEventListener('input', function() {
             formatPhone(this);
@@ -320,55 +413,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             formatPhone(this);
         });
         
+        // Aplicar máscara e validação ao CPF
+        const campoCPF = document.getElementById('documento_rg_cpf');
+        
+        campoCPF.addEventListener('input', function() {
+            formatCPF(this);
+            // Remove classe de erro enquanto digita
+            this.classList.remove('is-invalid');
+        });
+        
+        campoCPF.addEventListener('blur', function(e) {
+            const cpf = this.value.trim();
+            
+            // Se campo está vazio, permite sair
+            if (!cpf) {
+                this.classList.remove('is-invalid');
+                return;
+            }
+            
+            // Se CPF é inválido, não permite sair do campo
+            if (!validarCPF(cpf)) {
+                e.preventDefault();
+                this.classList.add('is-invalid');
+                this.focus();
+                
+                // Mostra alerta explicativo apenas uma vez por tentativa
+                if (!this.hasAttribute('data-alert-shown')) {
+                    alert('CPF inválido! Informe um CPF válido.');
+                    this.setAttribute('data-alert-shown', 'true');
+                }
+                return false;
+            } else {
+                this.classList.remove('is-invalid');
+                this.removeAttribute('data-alert-shown');
+            }
+        });
+        
+        // Remove o atributo de alerta quando começar a digitar novamente
+        campoCPF.addEventListener('keydown', function() {
+            this.removeAttribute('data-alert-shown');
+        });
+        
         // Validar idade mínima e máxima
         const campoData = document.getElementById('data_nascimento');
 
-function validarData() {
-    const val = campoData.value;
+        function validarData() {
+            const val = campoData.value;
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(val)) {
-        return; // data incompleta → não valida
-    }
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+                return; // data incompleta → não valida
+            }
 
-    const parts = val.split('-').map(Number);
-    const birthDate = new Date(parts[0], parts[1] - 1, parts[2]);
+            const parts = val.split('-').map(Number);
+            const birthDate = new Date(parts[0], parts[1] - 1, parts[2]);
 
-    if (
-        birthDate.getFullYear() !== parts[0] ||
-        birthDate.getMonth() !== parts[1] - 1 ||
-        birthDate.getDate() !== parts[2]
-    ) {
-        alert('Data de nascimento inválida.');
-        campoData.value = '';
-        return;
-    }
+            if (
+                birthDate.getFullYear() !== parts[0] ||
+                birthDate.getMonth() !== parts[1] - 1 ||
+                birthDate.getDate() !== parts[2]
+            ) {
+                alert('Data de nascimento inválida.');
+                campoData.value = '';
+                return;
+            }
 
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-    }
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
 
-    if (age < 1) {
-        alert('A criança deve ter pelo menos 1 ano completo.');
-        campoData.value = '';
-    } else if (age > 12) {
-        alert('Este sistema é destinado apenas a crianças de até 12 anos.');
-        campoData.value = '';
-    }
-}
+            if (age < 1) {
+                alert('A criança deve ter pelo menos 1 ano completo.');
+                campoData.value = '';
+            } else if (age > 12) {
+                alert('Este sistema é destinado apenas a crianças de até 12 anos.');
+                campoData.value = '';
+            }
+        }
 
-// dispara validação ao sair do campo (mouse ou TAB)
-campoData.addEventListener('blur', validarData);
+        // dispara validação ao sair do campo (mouse ou TAB)
+        campoData.addEventListener('blur', validarData);
 
-// dispara validação especificamente ao pressionar TAB
-campoData.addEventListener('keydown', function(e) {
-    if (e.key === 'Tab') {
-        validarData();
-    }
-});
-
+        // dispara validação especificamente ao pressionar TAB
+        campoData.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                validarData();
+            }
+        });
         
         // Validação do formulário
         document.getElementById('kidsForm').addEventListener('submit', function(e) {
@@ -384,9 +517,21 @@ campoData.addEventListener('keydown', function(e) {
                 }
             });
             
+            // Validação específica do CPF no envio
+            const cpfField = document.getElementById('documento_rg_cpf');
+            const cpfValue = cpfField.value.trim();
+            
+            // Se CPF foi preenchido, deve ser válido
+            if (cpfValue && !validarCPF(cpfValue)) {
+                cpfField.classList.add('is-invalid');
+                cpfField.focus();
+                isValid = false;
+                alert('O CPF informado é inválido!');
+            }
+            
             if (!isValid) {
                 e.preventDefault();
-                alert('Por favor, preencha todos os campos obrigatórios marcados com *');
+                alert('Por favor, preencha todos os campos obrigatórios marcados com * e corrija os erros indicados.');
                 return false;
             }
         });
