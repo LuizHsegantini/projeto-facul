@@ -88,6 +88,77 @@ try {
     $currentUser = getCurrentUser();
 }
 
+// Definir permissões por perfil (copiado do dashboard)
+$permissions = [
+    'administrador' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => true,
+        'funcionarios' => true,
+        'relatorios' => true,
+        'logs' => true
+    ],
+    'coordenador' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => true,
+        'funcionarios' => false,
+        'relatorios' => true,
+        'logs' => false
+    ],
+    'animador' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false
+    ],
+    'monitor' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false
+    ],
+    'auxiliar' => [
+        'dashboard' => true,
+        'eventos' => false,
+        'criancas' => true,
+        'cadastro_crianca' => false,
+        'checkin' => true,
+        'atividades' => false,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false
+    ]
+];
+
+$userPermissions = $permissions[$currentUser['perfil']] ?? $permissions['auxiliar'];
+
+function hasUserPermission($permission) {
+    global $userPermissions;
+    return isset($userPermissions[$permission]) && $userPermissions[$permission];
+}
+
 if (!function_exists('renderLogData')) {
     function renderLogData(?string $payload): string
     {
@@ -115,7 +186,7 @@ if (!function_exists('renderLogData')) {
     <title>Logs do Sistema - MagicKids Eventos</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/logs.css">
+    <link rel="stylesheet" href="assets/css/logs1.css">
 </head>
 <body>
     <!-- Floating Shapes -->
@@ -127,7 +198,8 @@ if (!function_exists('renderLogData')) {
 
     <!-- Sidebar -->
     <nav class="sidebar">
-        <div class="company-info">
+        <div>
+            <div class="company-info">
                 <i class="fas fa-magic"></i>
                 <div class="fw-bold">MagicKids Eventos</div>
                 <p class="mb-0">Sistema de gestão</p>
@@ -136,55 +208,83 @@ if (!function_exists('renderLogData')) {
         <ul class="nav flex-column">
             <li class="nav-item">
                 <a class="nav-link" href="dashboard_eventos.php">
-                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    <i class="fas fa-tachometer-alt"></i>Dashboard
                 </a>
             </li>
+            
+            <?php if (hasUserPermission('eventos')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="eventos.php">
-                    <i class="fas fa-calendar-star me-2"></i>Eventos
+                    <i class="fas fa-calendar-alt"></i>Eventos
                 </a>
             </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('criancas')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="criancas.php">
-                    <i class="fas fa-child me-2"></i>Crianças
+                    <i class="fas fa-child"></i>Crianças
                 </a>
             </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('cadastro_crianca')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="cadastro_crianca.php">
-                    <i class="fas fa-user-plus me-2"></i>Cadastrar Criança
+                    <i class="fas fa-user-plus"></i>Cadastrar Criança
                 </a>
             </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('checkin')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="checkin.php">
-                    <i class="fas fa-clipboard-check me-2"></i>Check-in/Check-out
+                    <i class="fas fa-clipboard-check"></i>Check-in/Check-out
                 </a>
             </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('atividades')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="atividades.php">
-                    <i class="fas fa-gamepad me-2"></i>Atividades
+                    <i class="fas fa-gamepad"></i>Atividades
                 </a>
             </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('equipes')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="equipes.php">
-                    <i class="fas fa-users me-2"></i>Equipes
+                    <i class="fas fa-users"></i>Equipes
                 </a>
             </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('funcionarios')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="funcionarios.php">
-                    <i class="fas fa-user-tie me-2"></i>Funcionários
+                    <i class="fas fa-user-tie"></i>Funcionários
                 </a>
             </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('relatorios')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="relatorios.php">
-                    <i class="fas fa-chart-bar me-2"></i>Relatórios
+                    <i class="fas fa-chart-bar"></i>Relatórios
                 </a>
             </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('logs')): ?>
             <li class="nav-item">
                 <a class="nav-link active" href="logs.php">
-                    <i class="fas fa-history me-2"></i>Logs do Sistema
+                    <i class="fas fa-history"></i>Logs do Sistema
                 </a>
             </li>
+            <?php endif; ?>
         </ul>
+    </div>
     </nav>
     
     <!-- Main Content -->
@@ -192,26 +292,32 @@ if (!function_exists('renderLogData')) {
         <!-- Header -->
         <div class="header-bar d-flex justify-content-between align-items-center">
             <div>
-                <h2 class="mb-0">Logs do Sistema</h2>
-                <p class="text-muted mb-0">Monitoramento e auditoria das atividades do sistema</p>
+                <h2 class="mb-1 welcome-text">Logs do Sistema</h2>
+                <p class="text-muted mb-0"><i class="fas fa-shield-alt me-2"></i>Monitoramento e auditoria das atividades do sistema</p>
+                <small class="text-info">
+                    <i class="fas fa-user-shield me-1"></i>
+                    Acesso: <?php echo ucfirst($currentUser['perfil']); ?>
+                </small>
             </div>
             <div class="d-flex align-items-center">
-                <div class="me-3">
-                    <small class="text-muted">Bem-vindo(a),</small><br>
-                    <strong><?php echo htmlspecialchars($currentUser['nome_completo'] ?? 'Usuário'); ?></strong>
-                    <span class="badge bg-primary ms-2"><?php echo ucfirst($currentUser['perfil'] ?? 'usuario'); ?></span>
+                <div class="me-3 text-end">
+                    <small class="text-muted d-block">Bem-vindo(a),</small>
+                    <strong class="d-block"><?php echo htmlspecialchars($currentUser['nome_completo']); ?></strong>
+                    <span class="badge bg-gradient" style="background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));">
+                        <?php echo ucfirst($currentUser['perfil']); ?>
+                    </span>
                 </div>
                 <div class="user-avatar">
-                    <?php echo strtoupper(substr($currentUser['nome_completo'] ?? 'U', 0, 2)); ?>
+                    <?php echo strtoupper(substr($currentUser['nome_completo'], 0, 2)); ?>
                 </div>
-                <div class="dropdown ms-2">
+                <div class="dropdown ms-3">
                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="fas fa-cog"></i>
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="profile.php"><i class="fas fa-user me-2"></i>Perfil</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="?action=logout"><i class="fas fa-sign-out-alt me-2"></i>Sair</a></li>
+                        <li><a class="dropdown-item" href="#" id="logout-trigger"><i class="fas fa-sign-out-alt me-2"></i>Sair</a></li>
                     </ul>
                 </div>
             </div>
@@ -220,27 +326,31 @@ if (!function_exists('renderLogData')) {
         <!-- Statistics Cards -->
         <div class="row mb-4">
             <div class="col-xl-3 col-md-6 mb-3">
-                <div class="stat-card primary">
-                    <div class="stat-number text-primary"><?php echo $statistics['total_logs'] ?? 0; ?></div>
+                <div class="stat-card primary position-relative">
+                    <div class="stat-number"><?php echo $statistics['total_logs'] ?? 0; ?></div>
                     <div class="stat-label">Total de Logs</div>
+                    <i class="fas fa-file-alt stat-icon"></i>
                 </div>
             </div>
             <div class="col-xl-3 col-md-6 mb-3">
-                <div class="stat-card info">
-                    <div class="stat-number text-info"><?php echo count($statistics['logs_por_usuario'] ?? []); ?></div>
+                <div class="stat-card info position-relative">
+                    <div class="stat-number"><?php echo count($statistics['logs_por_usuario'] ?? []); ?></div>
                     <div class="stat-label">Usuários Ativos</div>
+                    <i class="fas fa-users stat-icon"></i>
                 </div>
             </div>
             <div class="col-xl-3 col-md-6 mb-3">
-                <div class="stat-card warning">
-                    <div class="stat-number text-warning"><?php echo count($statistics['logs_por_acao'] ?? []); ?></div>
+                <div class="stat-card warning position-relative">
+                    <div class="stat-number"><?php echo count($statistics['logs_por_acao'] ?? []); ?></div>
                     <div class="stat-label">Tipos de Ação</div>
+                    <i class="fas fa-cogs stat-icon"></i>
                 </div>
             </div>
             <div class="col-xl-3 col-md-6 mb-3">
-                <div class="stat-card success">
-                    <div class="stat-number text-success"><?php echo count($statistics['logs_por_dia'] ?? []); ?></div>
+                <div class="stat-card success position-relative">
+                    <div class="stat-number"><?php echo count($statistics['logs_por_dia'] ?? []); ?></div>
                     <div class="stat-label">Dias com Atividade</div>
+                    <i class="fas fa-calendar-check stat-icon"></i>
                 </div>
             </div>
         </div>
@@ -741,9 +851,106 @@ if (!function_exists('renderLogData')) {
             </div>
         </div>
         <?php endif; ?>
+        
+        <!-- Footer with System Info -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-3">
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            MagicKids Eventos - Sistema de Auditoria e Logs
+                            <span class="mx-3">|</span>
+                            <i class="fas fa-clock me-2"></i>
+                            Última atualização: <?php echo date('d/m/Y H:i:s '); ?>
+                            <span class="mx-3">|</span>
+                            <i class="fas fa-database me-2" style="color: var(--info-color);"></i>
+                            Monitoramento em tempo real
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
+
+    <!-- Modal de Logout -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content logout-modal">
+                <div class="modal-header border-0 text-center">
+                    <div class="w-100">
+                        <div class="logout-icon-modal">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </div>
+                        <h4 class="modal-title mt-3" id="logoutModalLabel">Confirmar Logout</h4>
+                    </div>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="text-muted mb-4">
+                        Olá, <strong><?php echo htmlspecialchars($currentUser['nome_completo']); ?></strong>!<br>
+                        Tem certeza que deseja sair do sistema?
+                    </p>
+                    <div class="d-flex gap-3 justify-content-center">
+                        <button type="button" class="btn btn-logout-confirm" id="confirm-logout-btn">
+                            <i class="fas fa-sign-out-alt me-2"></i>Sim, Sair
+                        </button>
+                        <button type="button" class="btn btn-cancel-logout" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Progresso do Logout -->
+    <div class="modal fade" id="logoutProgressModal" tabindex="-1" aria-labelledby="logoutProgressLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content logout-modal">
+                <div class="modal-body text-center py-5">
+                    <div class="logout-progress-icon">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <h4 class="mt-3 mb-3">Realizando Logout...</h4>
+                    <p class="text-muted mb-4">Aguarde enquanto finalizamos sua sessão</p>
+                    
+                    <div class="progress mb-3 logout-progress-bar">
+                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    
+                    <div class="logout-steps">
+                        <small class="text-muted">
+                            <span id="step-text">Salvando dados da sessão...</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Sucesso do Logout -->
+    <div class="modal fade" id="logoutSuccessModal" tabindex="-1" aria-labelledby="logoutSuccessLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content logout-modal">
+                <div class="modal-body text-center py-5">
+                    <div class="success-icon-modal">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h4 class="mt-3 mb-3 text-success">Logout Realizado!</h4>
+                    <p class="text-muted mb-4">
+                        Sua sessão foi finalizada com sucesso.<br>
+                        Redirecionando para a página de login...
+                    </p>
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/logout.js"></script>
     <script>
         // Auto refresh a cada 5 minutos (opcional - pode ser desabilitado)
         let autoRefreshEnabled = false;
@@ -856,6 +1063,57 @@ if (!function_exists('renderLogData')) {
                 }
             });
         });
+
+        // Add hover effects to navigation links (copiado do dashboard)
+        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+            link.addEventListener('mouseenter', function() {
+                this.style.background = 'rgba(255, 255, 255, 0.25)';
+            });
+            
+            link.addEventListener('mouseleave', function() {
+                if (!this.classList.contains('active')) {
+                    this.style.background = '';
+                }
+            });
+        });
+
+        // Add floating animation to shapes (copiado do dashboard)
+        document.querySelectorAll('.shape').forEach((shape, index) => {
+            shape.addEventListener('mouseover', function() {
+                this.style.opacity = '0.1';
+                this.style.transform = 'scale(1.2)';
+            });
+            
+            shape.addEventListener('mouseout', function() {
+                this.style.opacity = '0.03';
+                this.style.transform = '';
+            });
+        });
+
+        // Add click animation to stat cards (copiado do dashboard)
+        document.querySelectorAll('.stat-card').forEach(card => {
+            card.addEventListener('click', function() {
+                this.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        });
     </script>
+    
+    <!-- Add custom CSS animation -->
+    <style>
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+    </style>
 </body>
 </html>

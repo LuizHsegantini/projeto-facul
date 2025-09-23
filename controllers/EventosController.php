@@ -488,6 +488,44 @@ class EventosController {
         }
     }
     
+    // MÉTODO CORRIGIDO - Este é o método que estava faltando
+    public function getEventosParaCheckin() {
+        try {
+            // Buscar eventos que estão ativos ou que ocorrem hoje/futuramente
+            // e que não estão cancelados
+            $query = "SELECT e.*, u.nome_completo as coordenador_nome,
+                      COUNT(DISTINCT ec.id) as total_inscricoes
+                      FROM eventos e 
+                      LEFT JOIN usuarios u ON e.coordenador_id = u.id
+                      LEFT JOIN evento_criancas ec ON e.id = ec.evento_id
+                      WHERE (
+                          e.status IN ('planejado', 'em_andamento', 'concluido') 
+                          AND DATE(e.data_inicio) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                      )
+                      OR (
+                          e.status = 'em_andamento'
+                      )
+                      GROUP BY e.id
+                      ORDER BY 
+                          CASE 
+                              WHEN e.status = 'em_andamento' THEN 1
+                              WHEN DATE(e.data_inicio) = CURDATE() THEN 2
+                              WHEN DATE(e.data_inicio) > CURDATE() THEN 3
+                              ELSE 4
+                          END,
+                          e.data_inicio ASC";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            
+            return $stmt->fetchAll();
+            
+        } catch (Exception $e) {
+            error_log("Erro no EventosController::getEventosParaCheckin: " . $e->getMessage());
+            return [];
+        }
+    }
+    
     private function logAction($user_id, $action, $table = null, $record_id = null, $old_data = null, $new_data = null) {
         try {
             $query = "INSERT INTO logs_sistema (usuario_id, acao, tabela_afetada, registro_id, 

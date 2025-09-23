@@ -1,157 +1,470 @@
 :root {
     --primary-color: #ff6b9d;
     --secondary-color: #ffc93c;
+    --accent-color: #0ea5e9;
     --success-color: #10b981;
     --warning-color: #f59e0b;
     --danger-color: #ef4444;
     --info-color: #06bcf4;
+    --purple-color: #8b5cf6;
 }
 
 body {
-    background-color: #fef7ff;
+    background: #fef7ff;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
 }
 
+/* Sidebar igual ao dashboard_eventos.css */
 .sidebar {
-    background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    background: linear-gradient(180deg, var(--primary-color) 0%, var(--accent-color) 100%);
     min-height: 100vh;
-    padding: 0;
-    position: fixed;
     width: 250px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #ffffff;
+    padding: 0;
     z-index: 1000;
+    box-shadow: 4px 0 15px rgba(255, 107, 157, 0.15);
 }
 
 .sidebar .company-info {
     padding: 1.5rem 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .sidebar .company-info i {
-    font-size: 2rem;
+    font-size: 2.5rem;
     color: white;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 .sidebar .company-name {
     color: white;
     font-weight: bold;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar nav {
+    padding: 1.5rem 1rem;
 }
 
 .sidebar .nav-link {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.85);
     padding: 0.75rem 1rem;
-    margin: 0.25rem 0.5rem;
-    border-radius: 8px;
-    transition: all 0.3s ease;
+    margin-bottom: 0.5rem;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.sidebar .nav-link i {
+    width: 20px;
+    text-align: center;
+    margin-right: 0.75rem;
 }
 
 .sidebar .nav-link:hover,
 .sidebar .nav-link.active {
-    background-color: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.15);
     color: white;
-    transform: translateX(5px);
+    transform: translateX(6px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
+/* Main Content */
 .main-content {
     margin-left: 250px;
     padding: 2rem;
 }
 
+.header-bar {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 30px rgba(14, 165, 233, 0.12);
+    border: 1px solid rgba(255, 107, 157, 0.05);
+}
+
+.welcome-text {
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+}
+
+.user-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+    transition: all 0.3s ease;
+}
+
+.user-avatar:hover {
+    transform: scale(1.1);
+}
+
+/* Cards */
 .card {
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 8px 25px rgba(255, 107, 157, 0.1);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(255, 107, 157, 0.15);
+}
+
+.card-header {
+    border-radius: 20px 20px 0 0 !important;
+    border-bottom: 1px solid rgba(255, 107, 157, 0.1);
+    padding: 1.5rem 2rem;
+}
+
+/* Específico para Check-in */
+.evento-ativo {
+    border-left: 5px solid var(--success-color);
+    background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+}
+
+.evento-passado {
+    border-left: 5px solid var(--warning-color);
+    background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
+}
+
+.date-restriction-alert {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    color: #92400e;
+}
+
+/* Cards de Crianças */
+.crianca-card {
     border-radius: 15px;
     border: none;
-    box-shadow: 0 2px 10px rgba(255, 107, 157, 0.1);
-}
-
-.btn {
-    border-radius: 8px;
-    font-weight: 600;
-}
-
-.badge {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.75rem;
-}
-
-.table {
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.crianca-card {
-    border-left: 4px solid;
+    box-shadow: 0 4px 15px rgba(255, 107, 157, 0.08);
     transition: all 0.3s ease;
-    margin-bottom: 1rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.crianca-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(255, 107, 157, 0.15);
 }
 
 .crianca-card.inscrito {
-    border-left-color: #6c757d;
+    border-left: 4px solid #6b7280;
+    background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
 }
 
 .crianca-card.confirmado {
-    border-left-color: var(--info-color);
+    border-left: 4px solid var(--info-color);
+    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
 }
 
 .crianca-card.checkin {
-    border-left-color: var(--success-color);
-    background-color: #f8fff9;
+    border-left: 4px solid var(--success-color);
+    background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15);
 }
 
 .crianca-card.checkout {
-    border-left-color: var(--warning-color);
-    background-color: #fffdf8;
+    border-left: 4px solid var(--warning-color);
+    background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
 }
 
 .crianca-avatar {
     width: 50px;
     height: 50px;
     border-radius: 50%;
-    background: var(--primary-color);
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     font-weight: bold;
     margin-right: 1rem;
+    box-shadow: 0 4px 15px rgba(255, 107, 157, 0.2);
     flex-shrink: 0;
 }
 
-.alergia-alert {
-    background: #ffe4e1;
-    color: #d63384;
-    padding: 0.25rem 0.5rem;
-    border-radius: 20px;
-    font-size: 0.7rem;
-    margin: 0.1rem;
-    display: inline-block;
-}
-
 .status-badge {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Alertas de Alergia */
+.alergia-alert {
+    background: linear-gradient(45deg, #fef2f2, #fce7e7);
+    color: #dc2626;
+    font-size: 0.7rem;
     padding: 0.3rem 0.6rem;
+    border-radius: 15px;
+    margin: 0.2rem;
+    display: inline-block;
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    box-shadow: 0 2px 6px rgba(214, 51, 132, 0.1);
+    transition: all 0.3s ease;
 }
 
-.quick-search {
-    position: sticky;
-    top: 20px;
-    z-index: 100;
+.alergia-alert:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(214, 51, 132, 0.2);
 }
 
+/* Botões de Ação */
+.btn-checkin {
+    background: linear-gradient(45deg, var(--success-color), #059669);
+    border: none;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-checkin:hover {
+    background: linear-gradient(45deg, #059669, #047857);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+    color: white;
+}
+
+.btn-checkout {
+    background: linear-gradient(45deg, var(--warning-color), #d97706);
+    border: none;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-checkout:hover {
+    background: linear-gradient(45deg, #d97706, #b45309);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+    color: white;
+}
+
+.btn-disabled {
+    background: #e5e7eb;
+    color: #6b7280;
+    border: none;
+    cursor: not-allowed;
+}
+
+/* Badges */
+.badge {
+    padding: 0.6rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 50px;
+}
+
+/* Alerts */
+.alert {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+/* Botões gerais */
+.btn {
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Form Controls */
+.form-select,
+.form-control {
+    border-radius: 10px;
+    border: 2px solid #e5e7eb;
+    transition: all 0.3s ease;
+}
+
+.form-select:focus,
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(255, 107, 157, 0.15);
+}
+
+/* Floating Shapes */
+.floating-shapes {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.shape {
+    position: absolute;
+    opacity: 0.03;
+    animation: float 12s ease-in-out infinite;
+}
+
+.shape:nth-child(1) {
+    top: 10%;
+    left: 70%;
+    animation-delay: 0s;
+    color: var(--primary-color);
+}
+
+.shape:nth-child(2) {
+    top: 50%;
+    right: 5%;
+    animation-delay: 4s;
+    color: var(--secondary-color);
+}
+
+.shape:nth-child(3) {
+    bottom: 20%;
+    left: 75%;
+    animation-delay: 8s;
+    color: var(--info-color);
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0px) rotate(0deg);
+    }
+
+    33% {
+        transform: translateY(-30px) rotate(120deg);
+    }
+
+    66% {
+        transform: translateY(-15px) rotate(240deg);
+    }
+}
+
+/* Responsividade */
 @media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+
     .main-content {
         margin-left: 0;
         padding: 1rem;
     }
 
-    .sidebar {
-        transform: translateX(-100%);
-        transition: transform 0.3s ease;
+    .crianca-card {
+        margin-bottom: 1rem;
     }
 
-    .sidebar.show {
-        transform: translateX(0);
+    .crianca-avatar {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* Animações especiais para status */
+.crianca-card.checkin::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--success-color), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Melhorias para acessibilidade */
+.btn:focus,
+.form-select:focus,
+.form-control:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Estados de loading */
+.btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
     }
 }
