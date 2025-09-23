@@ -37,3 +37,15 @@ Repositório:
 6. O próximo passo é digitar no navegador: “localhost/nomedapasta/login.php”
 
 7. Siga o menu interativo de login para iniciar a sessão.
+
+
+_______________________________________________________________________________________________________________________________________
+
+
+
+####################################### Check List de Erros solucionados #############################################################
+
+
+* -Na tela de check in/check out se você tentar mudar o evento, ele dá uma bugada e não sai do que foi selecionado primeiro.
+
+
