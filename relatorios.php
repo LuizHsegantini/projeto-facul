@@ -125,7 +125,6 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                 <a class="nav-link" href="equipes.php"><i class="fas fa-people-arrows me-2"></i>Equipes</a>
                 <a class="nav-link active" href="relatorios.php"><i class="fas fa-chart-pie me-2"></i>Relatórios</a>
                 <a class="nav-link" href="logs.php"><i class="fas fa-clipboard-list me-2"></i>Logs</a>
-                <a class="nav-link text-warning" href="logout.php"><i class="fas fa-right-from-bracket me-2"></i>Sair</a>
             </nav>
         </div>
         <div class="p-3 border-top border-white-25 text-white-75">

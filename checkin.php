@@ -242,8 +242,8 @@ function podeRealizarCheckin($evento) {
         </nav>
         
         <div class="mt-auto p-3">
-            <a class="nav-link text-center" href="logout.php">
-                <i class="fas fa-sign-out-alt"></i>Sair
+        
+               
             </a>
         </div>
     </nav>

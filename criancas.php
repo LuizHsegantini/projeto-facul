@@ -158,8 +158,7 @@ $currentPage = $result['current_page'];
             </li>
             <?php endif; ?>
             <li class="nav-item mt-auto">
-                <a class="nav-link logout-btn" href="logout.php">
-                    <i class="fas fa-sign-out-alt"></i>Sair
+            
                 </a>
             </li>
         </ul>
