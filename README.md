@@ -48,3 +48,5 @@ ________________________________________________________________________________
 ### Check List de Erros solucionados
 
 - Na tela de check in/check out se você tentar mudar o evento, ele dá uma bugada e não sai do que foi selecionado primeiro.
+- Na tela de perfil, os icones de estatísticas estavam girando. Mas o erro foi corrigido. 
+
