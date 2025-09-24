@@ -683,57 +683,210 @@ function hasUserPermission($permission) {
     }
     
     // Busca rápida (mantido igual)
-    let searchTimeout;
-    document.getElementById('quickSearch').addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        const termo = this.value.trim();
+    // Busca rápida - OTIMIZADA
+let searchTimeout;
+let lastSearchTerm = '';
+
+document.getElementById('quickSearch').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    const termo = this.value.trim();
+    
+    if (termo === lastSearchTerm) return;
+    lastSearchTerm = termo;
+    
+    if (termo.length < 2) {
+        document.getElementById('searchResults').innerHTML = '';
+        return;
+    }
+    
+    // Mostrar loading
+    document.getElementById('searchResults').innerHTML = `
+        <div class="text-center py-3">
+            <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+            Buscando...
+        </div>
+    `;
+    
+    searchTimeout = setTimeout(() => {
+        // Usar FormData para melhor compatibilidade
+        const formData = new FormData();
+        formData.append('termo', termo);
         
-        if (termo.length < 2) {
-            document.getElementById('searchResults').innerHTML = '';
-            return;
-        }
-        
-        searchTimeout = setTimeout(() => {
-            fetch('ajax/buscar_criancas.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ termo: termo })
-            })
-            .then(response => response.json())
-            .then(data => {
-                let html = '';
-                if (data.success && data.criancas.length > 0) {
-                    html = '<div class="list-group">';
-                    data.criancas.forEach(crianca => {
-                        html += `
-                            <div class="list-group-item list-group-item-action">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">${crianca.nome_completo}</h6>
-                                    <small>${crianca.idade} anos</small>
-                                </div>
-                                <p class="mb-1">Responsável: ${crianca.nome_responsavel}</p>
-                                <small>Tel: ${crianca.telefone_principal}</small>
+        fetch('../ajax/buscar_criancas.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Erro na rede');
+            return response.json();
+        })
+        .then(data => {
+            let html = '';
+            
+            if (data.success && data.criancas && data.criancas.length > 0) {
+                html = '<div class="search-results-container">';
+                
+                data.criancas.forEach(crianca => {
+                    const iniciais = crianca.nome_completo.substring(0, 2).toUpperCase();
+                    const statusClass = crianca.ativo ? 'status-active' : 'status-inactive';
+                    
+                    html += `
+                        <div class="search-result-item" onclick="selecionarCrianca(${crianca.id}, '${crianca.nome_completo.replace(/'/g, "\\'")}')">
+                            <div class="search-result-avatar">${iniciais}</div>
+                            <div class="search-result-info">
+                                <h6 class="mb-1">
+                                    <span class="status-indicator ${statusClass}"></span>
+                                    ${crianca.nome_completo}
+                                </h6>
+                                <p class="mb-1">
+                                    <strong>Idade:</strong> ${crianca.idade} anos | 
+                                    <strong>Responsável:</strong> ${crianca.nome_responsavel}
+                                </p>
+                                <p class="mb-0 text-sm">
+                                    <strong>Telefone:</strong> ${crianca.telefone_principal}
+                                    ${crianca.alergia_alimentos ? `| <span class="text-danger">⚠️ Alergia: ${crianca.alergia_alimentos}</span>` : ''}
+                                </p>
                             </div>
-                        `;
-                    });
-                    html += '</div>';
-                } else {
-                    html = '<div class="alert alert-info">Nenhuma criança encontrada.</div>';
-                }
-                document.getElementById('searchResults').innerHTML = html;
-            })
-            .catch(error => {
-                document.getElementById('searchResults').innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Erro na busca. Tente novamente.
+                            <div class="search-result-actions">
+                                <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); verDetalhesBusca(${crianca.id})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>`;
+            } else {
+                html = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-search fa-2x text-muted mb-3"></i>
+                        <p class="text-muted mb-2">Nenhuma criança encontrada</p>
+                        <small class="text-muted">Tente buscar por nome ou responsável</small>
                     </div>
                 `;
-            });
-        }, 300);
-    });
+            }
+            
+            document.getElementById('searchResults').innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Erro na busca:', error);
+            document.getElementById('searchResults').innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Erro temporário na busca. Tente novamente.
+                </div>
+            `;
+        });
+    }, 400); // Delay aumentado para reduzir requisições
+});
+
+// Função para selecionar criança da busca
+function selecionarCrianca(criancaId, nomeCrianca) {
+    // Fechar modal de busca
+    const modal = bootstrap.Modal.getInstance(document.getElementById('searchModal'));
+    modal.hide();
+    
+    // Limpar busca
+    document.getElementById('quickSearch').value = '';
+    document.getElementById('searchResults').innerHTML = '';
+    
+    // Mostrar mensagem de sucesso
+    showTempMessage(`Criança "${nomeCrianca}" selecionada`, 'success');
+    
+    // Aqui você pode adicionar lógica para redirecionar ou mostrar detalhes
+    // Por exemplo, abrir os detalhes da criança
+    verDetalhesBusca(criancaId);
+}
+
+// Função para ver detalhes da criança da busca
+function verDetalhesBusca(criancaId) {
+    // Fechar modal de busca
+    const modal = bootstrap.Modal.getInstance(document.getElementById('searchModal'));
+    modal.hide();
+    
+    // Aqui você pode implementar a busca dos detalhes completos
+    fetch(`../ajax/detalhes_crianca.php?id=${criancaId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                mostrarDetalhesCompletos(data.crianca);
+            }
+        })
+        .catch(error => {
+            showTempMessage('Erro ao carregar detalhes', 'danger');
+        });
+}
+
+// Função para mostrar mensagens temporárias
+function showTempMessage(message, type) {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show`;
+    alert.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check' : 'exclamation-triangle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('.main-content').insertBefore(alert, document.querySelector('.main-content').firstChild);
+    
+    setTimeout(() => {
+        alert.remove();
+    }, 3000);
+}
+
+// Função auxiliar para mostrar detalhes completos
+function mostrarDetalhesCompletos(crianca) {
+    const content = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Informações Pessoais</h6>
+                <div class="mb-3">
+                    <strong>Nome:</strong> ${crianca.nome_completo}<br>
+                    <strong>Idade:</strong> ${crianca.idade} anos<br>
+                    <strong>Data Nasc.:</strong> ${new Date(crianca.data_nascimento).toLocaleDateString('pt-BR')}<br>
+                    <strong>Sexo:</strong> ${crianca.sexo}
+                </div>
+                
+                <h6>Responsável</h6>
+                <div class="mb-3">
+                    <strong>Nome:</strong> ${crianca.nome_responsavel}<br>
+                    <strong>Telefone:</strong> ${crianca.telefone_principal}<br>
+                    <strong>Parentesco:</strong> ${crianca.grau_parentesco}
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <h6>Informações de Saúde</h6>
+                <div class="mb-3">
+                    ${crianca.alergia_alimentos ? `<strong>Alergia Alimentos:</strong> <span class="text-danger">${crianca.alergia_alimentos}</span><br>` : ''}
+                    ${crianca.alergia_medicamentos ? `<strong>Alergia Medicamentos:</strong> <span class="text-danger">${crianca.alergia_medicamentos}</span><br>` : ''}
+                    ${crianca.observacoes_saude ? `<strong>Observações:</strong> ${crianca.observacoes_saude}` : 'Nenhuma observação'}
+                </div>
+                
+                <h6>Contato Emergencial</h6>
+                <div class="mb-3">
+                    <strong>Nome:</strong> ${crianca.nome_emergencia}<br>
+                    <strong>Telefone:</strong> ${crianca.telefone_emergencia}<br>
+                    <strong>Parentesco:</strong> ${crianca.grau_parentesco_emergencia}
+                </div>
+            </div>
+        </div>
+
+    `;
+    
+    document.getElementById('detailsContent').innerHTML = content;
+    new bootstrap.Modal(document.getElementById('detailsModal')).show();
+}
+
+// Funções auxiliares (placeholder)
+function adicionarAEvento(criancaId) {
+    alert(`Adicionar criança ${criancaId} a evento - Implementar esta função`);
+}
+
+function editarCrianca(criancaId) {
+    window.location.href = `cadastro_crianca.php?id=${criancaId}`;
+}
     
     // Auto-refresh a cada 30 segundos se estiver em um evento
     <?php if ($evento_id): ?>

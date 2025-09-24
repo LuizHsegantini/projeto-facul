@@ -536,7 +536,7 @@ function hasUserPermission($permission) {
                         <div class="row g-3">
                             <?php if (in_array('cadastro_crianca', $userPermissions['quick_actions'])): ?>
                             <div class="col-md-<?php echo count($userPermissions['quick_actions']) >= 4 ? '3' : '4'; ?>">
-                                <a href="cadastro_crianca.php" class="quick-action-btn">
+                                <a href="/Faculdade/cadastro_crianca.php" class="quick-action-btn">
                                     <i class="fas fa-user-plus fa-2x mb-3 d-block" style="color: var(--primary-color);"></i>
                                     <strong>Cadastrar Criança</strong>
                                     <small class="d-block text-muted mt-1">Adicionar nova criança</small>

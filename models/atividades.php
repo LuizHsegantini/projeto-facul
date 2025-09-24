@@ -487,26 +487,230 @@ function hasUserPermission($permission) {
     </main>
 
     <?php if ($canManageAtividades): ?>
-    <!-- Modais permanecem os mesmos -->
-    <div class="modal fade" id="createAtividadeModal" tabindex="-1" aria-hidden="true">
-        <!-- Conteúdo do modal create permanece igual -->
+<!-- Modais completos -->
+<div class="modal fade" id="createAtividadeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nova Atividade</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <form method="post" action="atividades.php">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="create">
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="titulo" class="form-label">Título *</label>
+                            <input type="text" class="form-control" id="titulo" name="titulo" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="tipo_atividade" class="form-label">Tipo de Atividade *</label>
+                            <input type="text" class="form-control" id="tipo_atividade" name="tipo_atividade" list="tipoAtividadeList" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="descricao" class="form-label">Descrição</label>
+                            <textarea class="form-control" id="descricao" name="descricao" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="evento_id" class="form-label">Evento *</label>
+                            <select class="form-select" id="evento_id" name="evento_id" required>
+                                <option value="">Selecione um evento</option>
+                                <?php foreach ($eventos as $evento): ?>
+                                <option value="<?php echo (int) $evento['id']; ?>">
+                                    <?php echo htmlspecialchars($evento['nome'], ENT_QUOTES, 'UTF-8'); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="responsavel_id" class="form-label">Responsável</label>
+                            <select class="form-select" id="responsavel_id" name="responsavel_id">
+                                <option value="">Não atribuído</option>
+                                <?php foreach ($responsaveis as $responsavel): ?>
+                                <option value="<?php echo (int) $responsavel['id']; ?>">
+                                    <?php echo htmlspecialchars($responsavel['nome_completo'], ENT_QUOTES, 'UTF-8'); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="data_inicio" class="form-label">Data de Início</label>
+                            <input type="datetime-local" class="form-control" id="data_inicio" name="data_inicio">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="data_fim_prevista" class="form-label">Data Fim Prevista</label>
+                            <input type="datetime-local" class="form-control" id="data_fim_prevista" name="data_fim_prevista">
+                        </div>
+                        <div class="col-12">
+                            <label for="material_necessario" class="form-label">Material Necessário</label>
+                            <textarea class="form-control" id="material_necessario" name="material_necessario" rows="2"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label for="publico_alvo" class="form-label">Público-Alvo</label>
+                            <input type="text" class="form-control" id="publico_alvo" name="publico_alvo">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="pendente">Pendente</option>
+                                <option value="em_execucao">Em execução</option>
+                                <option value="concluida">Concluída</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Criar Atividade</button>
+                </div>
+            </form>
+        </div>
     </div>
+</div>
 
-    <div class="modal fade" id="editAtividadeModal" tabindex="-1" aria-hidden="true">
-        <!-- Conteúdo do modal edit permanece igual -->
+<div class="modal fade" id="editAtividadeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Atividade</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <form method="post" action="atividades.php">
+                <input type="hidden" name="action" value="update">
+                <input type="hidden" id="editAtividadeId" name="id">
+                
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="editTitulo" class="form-label">Título *</label>
+                            <input type="text" class="form-control" id="editTitulo" name="titulo" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editTipo" class="form-label">Tipo de Atividade *</label>
+                            <input type="text" class="form-control" id="editTipo" name="tipo_atividade" list="tipoAtividadeList" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="editDescricao" class="form-label">Descrição</label>
+                            <textarea class="form-control" id="editDescricao" name="descricao" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editEvento" class="form-label">Evento *</label>
+                            <select class="form-select" id="editEvento" name="evento_id" required>
+                                <option value="">Selecione um evento</option>
+                                <?php foreach ($eventos as $evento): ?>
+                                <option value="<?php echo (int) $evento['id']; ?>">
+                                    <?php echo htmlspecialchars($evento['nome'], ENT_QUOTES, 'UTF-8'); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editResponsavel" class="form-label">Responsável</label>
+                            <select class="form-select" id="editResponsavel" name="responsavel_id">
+                                <option value="">Não atribuído</option>
+                                <?php foreach ($responsaveis as $responsavel): ?>
+                                <option value="<?php echo (int) $responsavel['id']; ?>">
+                                    <?php echo htmlspecialchars($responsavel['nome_completo'], ENT_QUOTES, 'UTF-8'); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="editInicio" class="form-label">Data de Início</label>
+                            <input type="datetime-local" class="form-control" id="editInicio" name="data_inicio">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="editPrevista" class="form-label">Data Fim Prevista</label>
+                            <input type="datetime-local" class="form-control" id="editPrevista" name="data_fim_prevista">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="editReal" class="form-label">Data Fim Real</label>
+                            <input type="datetime-local" class="form-control" id="editReal" name="data_fim_real">
+                        </div>
+                        <div class="col-12">
+                            <label for="editMaterial" class="form-label">Material Necessário</label>
+                            <textarea class="form-control" id="editMaterial" name="material_necessario" rows="2"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label for="editPublico" class="form-label">Público-Alvo</label>
+                            <input type="text" class="form-control" id="editPublico" name="publico_alvo">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editStatus" class="form-label">Status</label>
+                            <select class="form-select" id="editStatus" name="status">
+                                <option value="pendente">Pendente</option>
+                                <option value="em_execucao">Em execução</option>
+                                <option value="concluida">Concluída</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Atualizar Atividade</button>
+                </div>
+            </form>
+        </div>
     </div>
+</div>
 
-    <div class="modal fade" id="statusAtividadeModal" tabindex="-1" aria-hidden="true">
-        <!-- Conteúdo do modal status permanece igual -->
+<div class="modal fade" id="statusAtividadeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Alterar Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <form method="post" action="atividades.php">
+                <input type="hidden" name="action" value="status">
+                <input type="hidden" id="statusAtividadeId" name="id">
+                
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="statusAtividadeSelect" class="form-label">Novo Status</label>
+                        <select class="form-select" id="statusAtividadeSelect" name="status" required>
+                            <option value="pendente">Pendente</option>
+                            <option value="em_execucao">Em execução</option>
+                            <option value="concluida">Concluída</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Atualizar Status</button>
+                </div>
+            </form>
+        </div>
     </div>
+</div>
 
-    <?php if (hasPermission('administrador')): ?>
-    <div class="modal fade" id="deleteAtividadeModal" tabindex="-1" aria-hidden="true">
-        <!-- Conteúdo do modal delete permanece igual -->
+<?php if (hasPermission('administrador')): ?>
+<div class="modal fade" id="deleteAtividadeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <form method="post" action="atividades.php">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" id="deleteAtividadeId" name="id">
+                
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir a atividade <strong class="atividade-nome"></strong>?</p>
+                    <p class="text-danger"><small>Esta ação não pode ser desfeita.</small></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Excluir Atividade</button>
+                </div>
+            </form>
+        </div>
     </div>
-    <?php endif; ?>
-    <?php endif; ?>
-
+</div>
+<?php endif; ?>
+<?php endif; ?>
     <datalist id="tipoAtividadeList">
         <?php foreach ($tiposAtividade as $tipo): ?>
         <option value="<?php echo htmlspecialchars($tipo, ENT_QUOTES, 'UTF-8'); ?>"></option>

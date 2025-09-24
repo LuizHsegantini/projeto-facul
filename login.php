@@ -130,16 +130,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <?php endif; ?>
                 
-                <!-- Botão de Limpeza de Emergência -->
-                <?php if ($error && strpos($error, 'logado') !== false): ?>
-                <div class="alert alert-warning" role="alert">
-                    <i class="fas fa-tools me-2"></i>
-                    <strong>Problema detectado!</strong> 
-                    <a href="logout_emergency.php" class="btn btn-sm btn-warning ms-2">
-                        <i class="fas fa-broom me-1"></i>Limpar Sistema
-                    </a>
-                </div>
-                <?php endif; ?>
                 
                 <form method="POST" id="loginForm">
                     <div class="mb-3">

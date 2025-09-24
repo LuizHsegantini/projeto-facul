@@ -31,7 +31,7 @@ class LogsController
         $limit = 20
     ): array {
         $page = max(1, (int) $page);
-        $limit = max(1, min(100, (int) $limit)); // Máximo 100 por página
+        $limit = max(1, min(100, (int) $limit));
         $offset = ($page - 1) * $limit;
 
         $filters = [
@@ -46,7 +46,6 @@ class LogsController
         [$conditions, $params] = $this->buildFilters($filters);
         $whereClause = $this->buildWhereClause($conditions);
 
-        // Query simplificada primeiro para testar
         $sql = "SELECT 
                     l.id,
                     l.usuario_id,
@@ -67,11 +66,6 @@ class LogsController
         try {
             $stmt = $this->conn->prepare($sql);
             
-            // Debug: log da query
-            error_log("Query SQL: " . $sql);
-            error_log("Parâmetros: " . print_r($params, true));
-            
-            // Bind dos parâmetros de filtro
             foreach ($params as $key => $value) {
                 $stmt->bindValue($key, $value);
             }
@@ -81,14 +75,10 @@ class LogsController
             $stmt->execute();
             $logs = $stmt->fetchAll();
 
-            error_log("Logs encontrados: " . count($logs));
-
-            // Formatar logs
             $logs = array_map(function (array $row) {
                 return $this->formatLogRow($row);
             }, $logs);
 
-            // Contar total de registros
             $countSql = "SELECT COUNT(*) AS total
                          FROM logs_sistema l
                          LEFT JOIN usuarios u ON u.id = l.usuario_id
@@ -101,8 +91,6 @@ class LogsController
             $countStmt->execute();
             $totalRecords = (int) $countStmt->fetchColumn();
 
-            error_log("Total de registros: " . $totalRecords);
-
             return [
                 'logs' => $logs,
                 'total' => $totalRecords,
@@ -113,19 +101,6 @@ class LogsController
 
         } catch (PDOException $e) {
             error_log("Erro ao buscar logs: " . $e->getMessage());
-            error_log("SQL State: " . $e->getCode());
-            
-            // Tentar query mais simples para debug
-            try {
-                $debugSql = "SELECT COUNT(*) FROM logs_sistema";
-                $debugStmt = $this->conn->prepare($debugSql);
-                $debugStmt->execute();
-                $debugCount = $debugStmt->fetchColumn();
-                error_log("Debug - Total de logs na tabela: " . $debugCount);
-            } catch (Exception $e2) {
-                error_log("Erro no debug: " . $e2->getMessage());
-            }
-            
             return [
                 'logs' => [],
                 'total' => 0,
@@ -142,7 +117,7 @@ class LogsController
             $filters = [];
         }
 
-        $limit = max(1, min(5000, $limit)); // Máximo 5000 para export
+        $limit = max(1, min(5000, $limit));
         [$conditions, $params] = $this->buildFilters($filters);
         $whereClause = $this->buildWhereClause($conditions);
 
@@ -219,7 +194,6 @@ class LogsController
         ];
 
         try {
-            // Total de logs
             $totalSql = "SELECT COUNT(*) FROM logs_sistema l LEFT JOIN usuarios u ON u.id = l.usuario_id $whereClause";
             $stmt = $this->conn->prepare($totalSql);
             foreach ($params as $key => $value) {
@@ -228,7 +202,6 @@ class LogsController
             $stmt->execute();
             $stats['total_logs'] = (int) $stmt->fetchColumn();
 
-            // Logs por ação
             $acaoSql = "SELECT l.acao, COUNT(*) AS total
                         FROM logs_sistema l
                         LEFT JOIN usuarios u ON u.id = l.usuario_id
@@ -243,7 +216,6 @@ class LogsController
             $stmt->execute();
             $stats['logs_por_acao'] = $stmt->fetchAll();
 
-            // Logs por usuário
             $usuarioSql = "SELECT 
                                COALESCE(u.nome_completo, 'Sistema') AS nome_completo, 
                                COUNT(l.id) AS total
@@ -260,7 +232,6 @@ class LogsController
             $stmt->execute();
             $stats['logs_por_usuario'] = $stmt->fetchAll();
 
-            // Logs por dia (últimos 30 dias se não houver filtro de data)
             $diaConditions = $conditions;
             if (!$this->hasDateFilter($filters)) {
                 $diaConditions[] = "DATE(l.data_criacao) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
@@ -339,6 +310,7 @@ class LogsController
         $days = max(1, $days);
         
         try {
+            // CORREÇÃO DEFINITIVA: Sintaxe MySQL correta
             $sql = "DELETE FROM logs_sistema WHERE data_criacao < DATE_SUB(NOW(), INTERVAL :days DAY)";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindValue(':days', $days, PDO::PARAM_INT);
@@ -347,7 +319,7 @@ class LogsController
                 $removed = $stmt->rowCount();
                 
                 // Registrar a limpeza no log
-                if (function_exists('getCurrentUser') && isset($_SESSION['user_id'])) {
+                if ($removed > 0 && function_exists('getCurrentUser') && isset($_SESSION['user_id'])) {
                     LogService::recordLog(
                         $_SESSION['user_id'],
                         'Limpeza de logs realizada',
@@ -369,6 +341,42 @@ class LogsController
         } catch (PDOException $e) {
             error_log("Erro ao limpar logs: " . $e->getMessage());
             return 0;
+        }
+    }
+
+    // MÉTODO ADICIONAL PARA DEBUG
+    public function countLogsToClean(int $days = 90): int
+    {
+        $days = max(1, $days);
+        
+        try {
+            $sql = "SELECT COUNT(*) FROM logs_sistema WHERE data_criacao < DATE_SUB(NOW(), INTERVAL :days DAY)";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindValue(':days', $days, PDO::PARAM_INT);
+            $stmt->execute();
+            
+            return (int) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            error_log("Erro ao contar logs para limpeza: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    // MÉTODO PARA VERIFICAR DATAS DOS LOGS
+    public function getDateRange(): array
+    {
+        try {
+            $sql = "SELECT 
+                        MIN(data_criacao) as mais_antiga,
+                        MAX(data_criacao) as mais_recente,
+                        COUNT(*) as total
+                    FROM logs_sistema";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetch();
+        } catch (PDOException $e) {
+            error_log("Erro ao buscar range de datas: " . $e->getMessage());
+            return [];
         }
     }
 
@@ -458,7 +466,6 @@ class LogsController
 
     private function formatLogRow(array $row): array
     {
-        // Garantir que todos os campos existam
         $row = array_merge([
             'id' => null,
             'usuario_id' => null,
@@ -472,20 +479,16 @@ class LogsController
             'usuario_nome' => null
         ], $row);
 
-        // Formatar dados JSON
         $row['dados_anteriores'] = $this->formatJsonString($row['dados_anteriores']);
         $row['dados_novos'] = $this->formatJsonString($row['dados_novos']);
 
-        // Garantir que o nome do usuário seja string ou null
         $row['usuario_nome'] = $row['usuario_nome'] ?: null;
 
-        // Formatar data
         if (!empty($row['data_criacao'])) {
             try {
                 $date = new DateTime($row['data_criacao']);
                 $row['data_criacao'] = $date->format('Y-m-d H:i:s');
             } catch (Exception $e) {
-                // Manter o valor original se não conseguir formatar
             }
         }
 
@@ -504,118 +507,5 @@ class LogsController
         }
 
         return trim($payload);
-    }
-
-    /**
-     * Método para testar a conexão e estrutura da tabela
-     */
-    public function testConnection(): array
-    {
-        try {
-            // Testar conexão básica
-            $stmt = $this->conn->query("SELECT 1 as test");
-            $connectionOk = (bool) $stmt;
-
-            // Verificar se estamos no banco correto
-            $stmt = $this->conn->query("SELECT DATABASE() as current_db");
-            $currentDb = $stmt->fetchColumn();
-
-            // Verificar estrutura da tabela
-            $stmt = $this->conn->query("DESCRIBE logs_sistema");
-            $columns = $stmt->fetchAll();
-
-            // Contar registros total
-            $stmt = $this->conn->query("SELECT COUNT(*) FROM logs_sistema");
-            $totalRecords = $stmt->fetchColumn();
-
-            // Buscar registros recentes para teste
-            $stmt = $this->conn->query("
-                SELECT l.*, u.nome_completo AS usuario_nome 
-                FROM logs_sistema l 
-                LEFT JOIN usuarios u ON u.id = l.usuario_id 
-                ORDER BY l.id DESC 
-                LIMIT 5
-            ");
-            $sampleLogs = $stmt->fetchAll();
-
-            // Testar filtros básicos
-            $testFilters = $this->index('', '', '', '', '', '', 1, 5);
-
-            // Verificar se há logs de hoje
-            $stmt = $this->conn->query("
-                SELECT COUNT(*) FROM logs_sistema 
-                WHERE DATE(data_criacao) = CURDATE()
-            ");
-            $logsToday = $stmt->fetchColumn();
-
-            return [
-                'connection_ok' => $connectionOk,
-                'current_database' => $currentDb,
-                'columns' => $columns,
-                'total_records' => (int) $totalRecords,
-                'sample_logs' => $sampleLogs,
-                'test_filters_result' => $testFilters,
-                'logs_today' => (int) $logsToday,
-                'php_pdo_version' => $this->conn->getAttribute(PDO::ATTR_SERVER_VERSION),
-                'charset' => $this->conn->getAttribute(PDO::ATTR_CONNECTION_STATUS)
-            ];
-
-        } catch (PDOException $e) {
-            return [
-                'connection_ok' => false,
-                'error' => $e->getMessage(),
-                'error_code' => $e->getCode(),
-                'columns' => [],
-                'total_records' => 0,
-                'sample_logs' => []
-            ];
-        }
-    }
-
-    /**
-     * Método específico para resetar/recriar logs se necessário
-     */
-    public function debugLogs(): array
-    {
-        try {
-            // Verificar se há logs
-            $stmt = $this->conn->query("SELECT COUNT(*) as total FROM logs_sistema");
-            $total = $stmt->fetchColumn();
-
-            // Pegar último log
-            $stmt = $this->conn->query("
-                SELECT l.*, u.nome_completo 
-                FROM logs_sistema l 
-                LEFT JOIN usuarios u ON u.id = l.usuario_id 
-                ORDER BY l.id DESC 
-                LIMIT 1
-            ");
-            $lastLog = $stmt->fetch();
-
-            // Testar query específica do sistema
-            $stmt = $this->conn->query("
-                SELECT 
-                    l.id, l.acao, l.data_criacao,
-                    COALESCE(u.nome_completo, 'Sistema') as usuario_nome
-                FROM logs_sistema l
-                LEFT JOIN usuarios u ON u.id = l.usuario_id
-                ORDER BY l.id DESC 
-                LIMIT 10
-            ");
-            $recentLogs = $stmt->fetchAll();
-
-            return [
-                'total_logs' => (int) $total,
-                'last_log' => $lastLog,
-                'recent_logs' => $recentLogs,
-                'connection_status' => 'OK'
-            ];
-
-        } catch (Exception $e) {
-            return [
-                'error' => $e->getMessage(),
-                'connection_status' => 'ERROR'
-            ];
-        }
     }
 }

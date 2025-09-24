@@ -240,14 +240,15 @@ function hasUserPermission($permission) {
     </div>
 
     <!-- Sidebar padronizada igual ao dashboard_eventos.php -->
-    <nav class="sidebar">
-        <div>
-            <div class="company-info">
-                <i class="fas fa-magic"></i>
-                <div class="fw-bold">MagicKids Eventos</div>
-                <p class="mb-0">Sistema de gestão</p>
-            </div>
-        
+<!-- Sidebar corrigida -->
+<nav class="sidebar">
+    <div class="company-info">
+        <i class="fas fa-magic"></i>
+        <div class="fw-bold">MagicKids Eventos</div>
+        <p class="mb-0">Sistema de gestão</p>
+    </div>
+    
+    <nav>
         <ul class="nav flex-column">
             <li class="nav-item">
                 <a class="nav-link" href="dashboard_eventos.php">
@@ -328,6 +329,13 @@ function hasUserPermission($permission) {
             <?php endif; ?>
         </ul>
     </nav>
+    
+    <div class="sidebar-footer">
+        <div class="fw-semibold">Logado como</div>
+        <div><?php echo htmlspecialchars($currentUserName, ENT_QUOTES, 'UTF-8'); ?></div>
+        <div class="text-white-50"><?php echo htmlspecialchars($currentUserPerfil, ENT_QUOTES, 'UTF-8'); ?></div>
+    </div>
+</nav>
         
         <div class="sidebar-footer">
             <div class="fw-semibold">Logado como</div>
@@ -769,6 +777,110 @@ function hasUserPermission($permission) {
                 });
             });
         });
+    </script>
+    <script>
+        // Função para validar CPF
+function validarCPF(cpf) {
+    cpf = cpf.replace(/[^\d]+/g, '');
+    
+    if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) {
+        return false;
+    }
+    
+    let soma = 0;
+    for (let i = 0; i < 9; i++) {
+        soma += parseInt(cpf.charAt(i)) * (10 - i);
+    }
+    let resto = soma % 11;
+    let digito1 = resto < 2 ? 0 : 11 - resto;
+    
+    if (digito1 !== parseInt(cpf.charAt(9))) {
+        return false;
+    }
+    
+    soma = 0;
+    for (let i = 0; i < 10; i++) {
+        soma += parseInt(cpf.charAt(i)) * (11 - i);
+    }
+    resto = soma % 11;
+    let digito2 = resto < 2 ? 0 : 11 - resto;
+    
+    return digito2 === parseInt(cpf.charAt(10));
+}
+
+// Função para formatar CPF
+function formatarCPF(cpf) {
+    cpf = cpf.replace(/[^\d]+/g, '');
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+}
+
+// Adicionar validação de CPF nos modais
+document.addEventListener('DOMContentLoaded', function () {
+    // Validar CPF nos campos de entrada
+    document.querySelectorAll('input[name="cpf"]').forEach(input => {
+        input.addEventListener('blur', function() {
+            const cpf = this.value;
+            const feedback = document.createElement('div');
+            feedback.className = 'cpf-feedback';
+            
+            // Remover feedback anterior
+            const existingFeedback = this.parentNode.querySelector('.cpf-feedback');
+            if (existingFeedback) {
+                existingFeedback.remove();
+            }
+            
+            if (cpf.trim() === '') {
+                this.classList.remove('cpf-valid', 'cpf-invalid');
+                return;
+            }
+            
+            if (validarCPF(cpf)) {
+                this.classList.remove('cpf-invalid');
+                this.classList.add('cpf-valid');
+                feedback.textContent = 'CPF válido';
+                feedback.className += ' valid';
+            } else {
+                this.classList.remove('cpf-valid');
+                this.classList.add('cpf-invalid');
+                feedback.textContent = 'CPF inválido';
+                feedback.className += ' invalid';
+            }
+            
+            this.parentNode.appendChild(feedback);
+        });
+        
+        // Formatar CPF enquanto digita
+        input.addEventListener('input', function() {
+            let cpf = this.value.replace(/[^\d]+/g, '');
+            if (cpf.length <= 11) {
+                if (cpf.length > 9) {
+                    cpf = cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                } else if (cpf.length > 6) {
+                    cpf = cpf.replace(/(\d{3})(\d{3})(\d{3})/, '$1.$2.$3');
+                } else if (cpf.length > 3) {
+                    cpf = cpf.replace(/(\d{3})(\d{3})/, '$1.$2');
+                }
+                this.value = cpf;
+            }
+        });
+    });
+
+    // Validar formulários antes de enviar
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const cpfInput = this.querySelector('input[name="cpf"]');
+            if (cpfInput && cpfInput.value.trim() !== '') {
+                if (!validarCPF(cpfInput.value)) {
+                    e.preventDefault();
+                    alert('Por favor, insira um CPF válido.');
+                    cpfInput.focus();
+                    return false;
+                }
+            }
+            return true;
+        });
+    });
+});
     </script>
 </body>
 </html>

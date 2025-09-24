@@ -26,6 +26,7 @@ $permissions = [
         'funcionarios' => true,
         'relatorios' => true,
         'logs' => true,
+        'export' => true, // Adicionada permissão de exportação
         'quick_actions' => ['cadastro_crianca', 'criar_evento', 'checkin', 'relatorios']
     ],
     'coordenador' => [
@@ -39,6 +40,7 @@ $permissions = [
         'funcionarios' => false,
         'relatorios' => true,
         'logs' => false,
+        'export' => true, // Adicionada permissão de exportação
         'quick_actions' => ['cadastro_crianca', 'criar_evento', 'checkin', 'relatorios']
     ],
     'animador' => [
@@ -52,6 +54,7 @@ $permissions = [
         'funcionarios' => false,
         'relatorios' => false,
         'logs' => false,
+        'export' => false, // Adicionada permissão de exportação
         'quick_actions' => ['cadastro_crianca', 'checkin']
     ],
     'monitor' => [
@@ -65,6 +68,7 @@ $permissions = [
         'funcionarios' => false,
         'relatorios' => false,
         'logs' => false,
+        'export' => false, // Adicionada permissão de exportação
         'quick_actions' => ['cadastro_crianca', 'checkin']
     ],
     'auxiliar' => [
@@ -78,10 +82,10 @@ $permissions = [
         'funcionarios' => false,
         'relatorios' => false,
         'logs' => false,
+        'export' => false, // Adicionada permissão de exportação
         'quick_actions' => ['checkin']
     ]
 ];
-
 
 $userPermissions = $permissions[$currentUser['perfil']] ?? $permissions['auxiliar'];
 
@@ -106,21 +110,21 @@ if (isset($_GET['export']) && hasUserPermission('export')) {
             header('Content-Type: application/pdf');
             header('Content-Disposition: attachment; filename="relatorio_' . date('Y-m-d_H-i-s') . '.pdf"');
             // TODO: Implementar geração do PDF
-            break;
+            exit();
             
         case 'excel':
             // Implementar exportação Excel
             header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             header('Content-Disposition: attachment; filename="relatorio_' . date('Y-m-d_H-i-s') . '.xlsx"');
             // TODO: Implementar geração do Excel
-            break;
+            exit();
             
         case 'csv':
             // Implementar exportação CSV
             header('Content-Type: text/csv');
             header('Content-Disposition: attachment; filename="relatorio_' . date('Y-m-d_H-i-s') . '.csv"');
             // TODO: Implementar geração do CSV
-            break;
+            exit();
     }
 }
 
@@ -147,7 +151,6 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
     <link rel="stylesheet" href="../assets/css/relatorios.css">    
 </head>
 <body>
-    <!-- Sidebar -->
     <!-- Sidebar -->
     <nav class="sidebar">
         <div>

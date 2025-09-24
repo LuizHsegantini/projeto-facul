@@ -1,4 +1,4 @@
-/* sidebar.css - CSS unificado para o sidebar */
+/* eventos.css - Estilos aprimorados para a página de eventos */
 :root {
     --primary-color: #ff6b9d;
     --secondary-color: #ffc93c;
@@ -8,9 +8,12 @@
     --danger-color: #ef4444;
     --info-color: #06bcf4;
     --purple-color: #8b5cf6;
+    --light-bg: #f8f9fa;
+    --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --card-radius: 12px;
 }
 
-/* Sidebar padronizada */
+/* SIDEBAR MANTIDO INTACTO - NÃO ALTERAR */
 .sidebar {
     background: linear-gradient(180deg, var(--primary-color) 0%, var(--accent-color) 100%);
     min-height: 100vh;
@@ -24,6 +27,7 @@
     color: #ffffff;
     padding: 0;
     z-index: 1000;
+    /* Sidebar sempre acima */
     box-shadow: 4px 0 15px rgba(255, 107, 157, 0.15);
 }
 
@@ -115,12 +119,6 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-.main-content {
-    margin-left: 250px;
-    padding: 2rem;
-    min-height: 100vh;
-}
-
 /* Floating Shapes */
 .floating-shapes {
     position: fixed;
@@ -173,4 +171,467 @@
     66% {
         transform: translateY(-15px) rotate(240deg);
     }
+}
+
+/* FIM DO SIDEBAR - AGORA OS ESTILOS APRIMORADOS PARA O CONTEÚDO */
+
+/* CORREÇÃO DO Z-INDEX - Garantir que tudo fique ATRÁS do sidebar */
+.main-content {
+    margin-left: 250px;
+    padding: 2rem;
+    min-height: 100vh;
+    background-color: var(--light-bg);
+    position: relative;
+    z-index: 1;
+    /* Fica atrás do sidebar (z-index: 1000) */
+}
+
+/* IMPORTANTE: Todos os elementos dentro do main-content devem ter z-index menor que 1000 */
+.main-content * {
+    position: relative;
+    z-index: 1 !important;
+    /* Força todos os elementos a ficarem atrás */
+}
+
+/* Exceção apenas para modais que precisam ficar acima de TUDO */
+.modal {
+    z-index: 1060 !important;
+    /* Acima do sidebar */
+}
+
+.modal-backdrop {
+    z-index: 1050 !important;
+    /* Acima do sidebar mas abaixo do modal */
+}
+
+/* Cabeçalhos aprimorados */
+.main-content h2 {
+    color: #2d3748;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.main-content .text-muted {
+    color: #718096 !important;
+}
+
+/* Cards aprimorados - SEM SOMBRA QUE ULTRAPASSE O SIDEBAR */
+.card {
+    border: none;
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 1.5rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background-color: white;
+    /* Garantir que não ultrapasse o sidebar */
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    /* Somente dentro do próprio elemento */
+    z-index: 5 !important;
+    /* Ainda abaixo do sidebar */
+}
+
+.card-header {
+    background-color: white;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1.25rem 1.5rem;
+    border-radius: var(--card-radius) var(--card-radius) 0 0 !important;
+}
+
+.card-header h5,
+.card-header h6 {
+    margin-bottom: 0;
+    font-weight: 600;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* BOTÕES CORRIGIDOS - SEM SOMBRA QUE ULTRAPASSE O SIDEBAR */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 2 !important;
+    /* Baixo o suficiente para não ultrapassar */
+    /* Remover qualquer overflow de sombra */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+    z-index: 3 !important;
+    /* Pequeno aumento no hover, mas ainda abaixo do sidebar */
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #ff5a8a;
+    border-color: #ff5a8a;
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Badges aprimorados */
+.badge {
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 0.4em 0.8em;
+}
+
+/* Grid de crianças inscritas - LAYOUT MELHORADO */
+.criancas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.crianca-item {
+    background: white;
+    border-radius: var(--card-radius);
+    padding: 1.25rem;
+    box-shadow: var(--card-shadow);
+    transition: all 0.2s ease;
+    border-left: 4px solid var(--primary-color);
+    /* Garantir que não ultrapasse */
+    z-index: 1 !important;
+}
+
+.crianca-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    z-index: 2 !important;
+    /* Ainda abaixo do sidebar */
+}
+
+.crianca-header {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.crianca-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.4rem;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.crianca-info {
+    flex-grow: 1;
+}
+
+.crianca-info h6 {
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.crianca-info .text-muted {
+    font-size: 0.85rem;
+    color: #718096;
+}
+
+.crianca-details {
+    margin-bottom: 1rem;
+}
+
+.contact-info {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.contact-info i {
+    width: 16px;
+    margin-right: 0.5rem;
+    color: var(--accent-color);
+}
+
+.alergias-container {
+    margin-bottom: 1rem;
+}
+
+.alergias-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.alergias-badges .badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.7em;
+}
+
+.crianca-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.status-badge {
+    padding: 0.4em 0.8em;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-badge.bg-success {
+    background-color: var(--success-color) !important;
+}
+
+.status-badge.bg-warning {
+    background-color: var(--warning-color) !important;
+}
+
+.status-badge.bg-info {
+    background-color: var(--info-color) !important;
+}
+
+/* Estado vazio aprimorado */
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #718096;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h6 {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+/* Cards de evento na lista */
+.evento-card {
+    transition: all 0.3s ease;
+    height: 100%;
+    z-index: 1 !important;
+}
+
+.evento-card .card-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.evento-card .card-title {
+    color: #2d3748;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.evento-card.planejado {
+    border-left: 4px solid #a0aec0;
+}
+
+.evento-card.em_andamento {
+    border-left: 4px solid var(--accent-color);
+}
+
+.evento-card.concluido {
+    border-left: 4px solid var(--success-color);
+}
+
+.evento-card.cancelado {
+    border-left: 4px solid var(--danger-color);
+}
+
+/* Progress bars aprimoradas */
+.progress {
+    height: 8px;
+    border-radius: 4px;
+    background-color: #e2e8f0;
+}
+
+.progress-bar {
+    border-radius: 4px;
+}
+
+/* Modal aprimorado */
+.modal-content {
+    border-radius: var(--card-radius);
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1.5rem;
+}
+
+.modal-title {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid #e2e8f0;
+    padding: 1rem 1.5rem;
+}
+
+/* Formulários aprimorados */
+.form-label {
+    font-weight: 500;
+    color: #4a5568;
+    margin-bottom: 0.5rem;
+}
+
+.form-control,
+.form-select {
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.1);
+}
+
+/* Alertas aprimorados */
+.alert {
+    border-radius: 8px;
+    border: none;
+    padding: 1rem 1.25rem;
+}
+
+.alert-success {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #065f46;
+}
+
+.alert-danger {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #7f1d1d;
+}
+
+/* Paginação aprimorada */
+.pagination {
+    margin-top: 2rem;
+}
+
+.page-link {
+    border-radius: 6px;
+    margin: 0 0.25rem;
+    border: 1px solid #e2e8f0;
+    color: #4a5568;
+    padding: 0.5rem 0.75rem;
+}
+
+.page-link:hover {
+    background-color: #f7fafc;
+    border-color: #cbd5e0;
+}
+
+.page-item.active .page-link {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0;
+        padding: 1rem;
+    }
+
+    .criancas-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .crianca-item {
+        padding: 1rem;
+    }
+
+    .crianca-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .crianca-avatar {
+        margin-bottom: 0.75rem;
+    }
+
+    .crianca-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+}
+
+/* Animações suaves */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.crianca-item {
+    animation: fadeIn 0.4s ease forwards;
+}
+
+/* CORREÇÃO FINAL: Garantir que NADA ultrapasse o sidebar */
+body {
+    overflow-x: hidden;
+}
+
+.main-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -250px;
+    width: 250px;
+    height: 100%;
+    background: transparent;
+    z-index: 999;
+    /* Cria uma barreira invisível */
+    pointer-events: none;
 }

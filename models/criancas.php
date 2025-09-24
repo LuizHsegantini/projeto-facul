@@ -287,7 +287,7 @@ $currentPage = $result['current_page'];
                     <?php endif; ?>
                 </p>
             </div>
-            <a href="cadastro_crianca.php" class="btn btn-primary">
+            <a href="/Faculdade/cadastro_crianca.php" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i>Nova Criança
             </a>
         </div>
