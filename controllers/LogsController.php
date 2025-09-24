@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // controllers/LogsController.php - Versão corrigida para MagicKids Eventos
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/LogService.php';
@@ -306,43 +306,54 @@ class LogsController
     }
 
     public function cleanOldLogs(int $days = 90): int
-    {
-        $days = max(1, $days);
-        
-        try {
-            // CORREÇÃO DEFINITIVA: Sintaxe MySQL correta
-            $sql = "DELETE FROM logs_sistema WHERE data_criacao < DATE_SUB(NOW(), INTERVAL :days DAY)";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bindValue(':days', $days, PDO::PARAM_INT);
+{
+    $days = max(1, (int) $days);
 
-            if ($stmt->execute()) {
-                $removed = $stmt->rowCount();
-                
-                // Registrar a limpeza no log
-                if ($removed > 0 && function_exists('getCurrentUser') && isset($_SESSION['user_id'])) {
-                    LogService::recordLog(
-                        $_SESSION['user_id'],
-                        'Limpeza de logs realizada',
-                        'logs_sistema',
-                        null,
-                        null,
-                        null,
-                        [
-                            'removed' => $removed,
-                            'days_threshold' => $days,
-                        ]
-                    );
-                }
-                
-                return $removed;
+    try {
+        // Calcula threshold no PHP (mais portátil que usar INTERVAL com placeholder)
+        $threshold = (new DateTime())->modify("-{$days} days")->format('Y-m-d H:i:s');
+
+        $this->conn->beginTransaction();
+        $sql = "DELETE FROM logs_sistema WHERE data_criacao < :threshold";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(':threshold', $threshold);
+        $stmt->execute();
+
+        $removed = $stmt->rowCount();
+        $this->conn->commit();
+
+        // Registrar a limpeza no log (se houver LogService)
+        if ($removed > 0 && class_exists('LogService')) {
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                @session_start();
             }
+            $userId = $_SESSION['user_id'] ?? null;
 
-            return 0;
-        } catch (PDOException $e) {
-            error_log("Erro ao limpar logs: " . $e->getMessage());
-            return 0;
+            try {
+                LogService::recordLog(
+                    $userId,
+                    'Limpeza de logs realizada',
+                    'logs_sistema',
+                    null,
+                    null,
+                    null,
+                    json_encode(['removed' => $removed, 'days_threshold' => $days], JSON_UNESCAPED_UNICODE)
+                );
+            } catch (Throwable $e) {
+                error_log('Falha ao registrar LogService após limpeza: ' . $e->getMessage());
+            }
         }
+
+        return $removed;
+    } catch (PDOException $e) {
+        error_log("Erro ao limpar logs: " . $e->getMessage());
+        if ($this->conn->inTransaction()) {
+            $this->conn->rollBack();
+        }
+        return 0;
     }
+}
+
 
     // MÉTODO ADICIONAL PARA DEBUG
     public function countLogsToClean(int $days = 90): int
@@ -493,7 +504,7 @@ class LogsController
         }
 
         return $row;
-    }
+    } 
 
     private function formatJsonString(?string $payload): ?string
     {
