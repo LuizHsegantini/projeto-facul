@@ -1,10 +1,11 @@
+﻿
 ﻿<?php
 // logs.php - Sistema de logs adaptado para MagicKids Eventos
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-require_once 'includes/auth.php';
-require_once 'controllers/LogsController.php';
+require_once '../includes/auth.php';
+require_once '../controllers/LogsController.php';
 
 date_default_timezone_set('America/Sao_Paulo');
 
@@ -15,17 +16,35 @@ if (!hasPermission('administrador')) {
     exit();
 }
 
-$logsController = new LogsController();
 $message = null;
 
-// Processar ações
+// Processar ações PRIMEIRO, antes de qualquer outra coisa
 if (isset($_GET['action'])) {
+    $logsController = new LogsController(); // Criar apenas quando necessário
+    
     switch ($_GET['action']) {
         case 'clean':
-            $days = $_GET['days'] ?? 90;
+            $days = intval($_GET['days'] ?? 90); // Garantir que seja inteiro
             $deletedRows = $logsController->cleanOldLogs($days);
-            $message = "Limpeza realizada com sucesso! $deletedRows registros removidos.";
-            break;
+            
+            // REDIRECIONAR para evitar resubmissão da ação
+            $redirectUrl = 'logs.php?cleaned=1&deleted=' . $deletedRows;
+            
+            // Preservar outros filtros se existirem
+            $preserveParams = ['search', 'user_id', 'action_filter', 'table', 'start_date', 'end_date', 'page'];
+            $queryParams = [];
+            foreach ($preserveParams as $param) {
+                if (isset($_GET[$param]) && $_GET[$param] !== '') {
+                    $queryParams[$param] = $_GET[$param];
+                }
+            }
+            
+            if (!empty($queryParams)) {
+                $redirectUrl .= '&' . http_build_query($queryParams);
+            }
+            
+            header('Location: ' . $redirectUrl);
+            exit(); // IMPORTANTE: sair imediatamente após redirect
             
         case 'export':
             $filters = [
@@ -57,27 +76,38 @@ if (isset($_GET['action'])) {
                 }
             }
             fclose($output);
-            exit();
+            exit(); // IMPORTANTE: sair após download
     }
+}
+
+// Verificar se houve limpeza (após redirect)
+if (isset($_GET['cleaned']) && $_GET['cleaned'] == '1') {
+    $deletedRows = intval($_GET['deleted'] ?? 0);
+    $message = "Limpeza realizada com sucesso! $deletedRows registros removidos.";
 }
 
 // Parâmetros de filtro
 $search = $_GET['search'] ?? '';
 $user_id = $_GET['user_id'] ?? '';
-$action = $_GET['action_filter'] ?? '';
+$action = $_GET['action_filter'] ?? ''; // Note: action_filter, não action
 $table = $_GET['table'] ?? '';
 $start_date = $_GET['start_date'] ?? '';
 $end_date = $_GET['end_date'] ?? '';
-$page = max(1, $_GET['page'] ?? 1);
+$page = max(1, intval($_GET['page'] ?? 1)); // Garantir que seja inteiro
 
 try {
-    $logsController = new LogsController();
+    // Criar apenas UMA instância do controller para operações normais
+    if (!isset($logsController)) {
+        $logsController = new LogsController();
+    }
+    
     $logsData = $logsController->index($search, $user_id, $action, $table, $start_date, $end_date, $page);
     $users = $logsController->getUsers();
     $actions = $logsController->getActions();
     $tables = $logsController->getTables();
     $statistics = $logsController->getLogStatistics($start_date, $end_date);
     $currentUser = getCurrentUser();
+    
 } catch (Exception $e) {
     error_log("Erro no logs: " . $e->getMessage());
     $logsData = ['logs' => [], 'total' => 0, 'pages' => 0, 'current_page' => 1];
@@ -88,7 +118,7 @@ try {
     $currentUser = getCurrentUser();
 }
 
-// Definir permissões por perfil (copiado do dashboard)
+// Definir permissões por perfil
 $permissions = [
     'administrador' => [
         'dashboard' => true,
@@ -186,7 +216,45 @@ if (!function_exists('renderLogData')) {
     <title>Logs do Sistema - MagicKids Eventos</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/logs1.css">
+    <link rel="stylesheet" href="../assets/css/logs1.css">
+    
+    <!-- CSS específico para corrigir os modais -->
+    <style>
+        /* CORREÇÃO PARA OS MODAIS - EVITAR CONFLITOS */
+        .modal {
+            z-index: 1060 !important;
+        }
+        
+        .modal-backdrop {
+            z-index: 1050 !important;
+        }
+        
+        /* Garantir que os botões dos modais funcionem corretamente */
+        .btn[data-bs-toggle="modal"] {
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Remover qualquer transform problemático */
+        .btn[data-bs-toggle="modal"]:hover {
+            transform: none !important;
+        }
+        
+        /* Garantir que os floating shapes não interfiram */
+        .floating-shapes {
+            z-index: 1 !important;
+        }
+        
+        .floating-shapes .shape {
+            pointer-events: none !important;
+        }
+        
+        /* Conteúdo principal deve ficar acima dos shapes */
+        .main-content {
+            position: relative;
+            z-index: 2;
+        }
+    </style>
 </head>
 <body>
     <!-- Floating Shapes -->
@@ -434,22 +502,39 @@ if (!function_exists('renderLogData')) {
                     <a href="logs.php" class="btn btn-outline-secondary ms-2">
                         <i class="fas fa-times me-2"></i>Limpar
                     </a>
-                    <a href="?action=export&<?php echo http_build_query($_GET); ?>" class="btn btn-success ms-2">
+                    
+                    <?php 
+                    // Criar URL para export excluindo parâmetros de ação
+                    $exportParams = $_GET;
+                    unset($exportParams['action'], $exportParams['cleaned'], $exportParams['deleted']);
+                    $exportParams['action'] = 'export';
+                    ?>
+                    <a href="?<?php echo http_build_query($exportParams); ?>" class="btn btn-success ms-2">
                         <i class="fas fa-download me-2"></i>Exportar CSV
                     </a>
+                    
                     <div class="btn-group ms-2" role="group">
                         <button type="button" class="btn btn-warning dropdown-toggle" data-bs-toggle="dropdown">
                             <i class="fas fa-trash me-2"></i>Limpeza
                         </button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="?action=clean&days=30" 
-                                   onclick="return confirm('Remover logs com mais de 30 dias?')">
+                            <?php 
+                            // Criar URLs de limpeza mantendo filtros atuais
+                            $cleanParams = $_GET;
+                            unset($cleanParams['action'], $cleanParams['cleaned'], $cleanParams['deleted']);
+                            
+                            $clean30 = array_merge($cleanParams, ['action' => 'clean', 'days' => 30]);
+                            $clean90 = array_merge($cleanParams, ['action' => 'clean', 'days' => 90]);
+                            $clean365 = array_merge($cleanParams, ['action' => 'clean', 'days' => 365]);
+                            ?>
+                            <li><a class="dropdown-item" href="?<?php echo http_build_query($clean30); ?>" 
+                                   onclick="return confirm('Remover logs com mais de 30 dias?\n\nEsta ação não pode ser desfeita.')">
                                    <i class="fas fa-calendar me-2"></i>Logs > 30 dias</a></li>
-                            <li><a class="dropdown-item" href="?action=clean&days=90" 
-                                   onclick="return confirm('Remover logs com mais de 90 dias?')">
+                            <li><a class="dropdown-item" href="?<?php echo http_build_query($clean90); ?>" 
+                                   onclick="return confirm('Remover logs com mais de 90 dias?\n\nEsta ação não pode ser desfeita.')">
                                    <i class="fas fa-calendar me-2"></i>Logs > 90 dias</a></li>
-                            <li><a class="dropdown-item" href="?action=clean&days=365" 
-                                   onclick="return confirm('Remover logs com mais de 1 ano?')">
+                            <li><a class="dropdown-item" href="?<?php echo http_build_query($clean365); ?>" 
+                                   onclick="return confirm('Remover logs com mais de 1 ano?\n\nEsta ação não pode ser desfeita.')">
                                    <i class="fas fa-calendar me-2"></i>Logs > 1 ano</a></li>
                         </ul>
                     </div>
@@ -573,80 +658,10 @@ if (!function_exists('renderLogData')) {
                                             <?php endif; ?>
                                             
                                             <?php if ($log['dados_anteriores'] || $log['dados_novos']): ?>
-                                            <button type="button" class="btn btn-sm btn-outline-info" 
+                                            <button type="button" class="btn btn-sm btn-outline-info modal-trigger-btn" 
                                                     data-bs-toggle="modal" data-bs-target="#logModal<?php echo $log['id']; ?>">
-                                                <i class="fas fa-eye"></i>
+                                                <i class="fas fa-eye"></i> Detalhes
                                             </button>
-                                            
-                                            <!-- Modal para detalhes do log -->
-                                            <div class="modal fade" id="logModal<?php echo $log['id']; ?>" tabindex="-1">
-                                                <div class="modal-dialog modal-lg">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">
-                                                                <i class="fas fa-info-circle me-2"></i>
-                                                                Detalhes do Log #<?php echo $log['id']; ?>
-                                                            </h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            <div class="row mb-3">
-                                                                <div class="col-md-6">
-                                                                    <strong>Usuário:</strong> <?php echo htmlspecialchars($log['usuario_nome'] ?? 'Sistema'); ?>
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <strong>IP:</strong> <?php echo htmlspecialchars($log['ip_address'] ?? 'N/A'); ?>
-                                                                </div>
-                                                            </div>
-                                                            <div class="row mb-3">
-                                                                <div class="col-md-6">
-                                                                    <strong>Ação:</strong> <?php echo htmlspecialchars($log['acao']); ?>
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <strong>Data:</strong> <?php echo date('d/m/Y H:i:s', strtotime($log['data_criacao'])); ?>
-                                                                </div>
-                                                            </div>
-                                                            <?php if ($log['tabela_afetada']): ?>
-                                                            <div class="row mb-3">
-                                                                <div class="col-md-6">
-                                                                    <strong>Tabela:</strong> <code><?php echo htmlspecialchars($log['tabela_afetada']); ?></code>
-                                                                </div>
-                                                                <?php if ($log['registro_id']): ?>
-                                                                <div class="col-md-6">
-                                                                    <strong>ID do Registro:</strong> <?php echo $log['registro_id']; ?>
-                                                                </div>
-                                                                <?php endif; ?>
-                                                            </div>
-                                                            <?php endif; ?>
-                                                            
-                                                            <?php if ($log['dados_anteriores']): ?>
-                                                            <div class="mb-3">
-                                                                <h6 class="text-primary">
-                                                                    <i class="fas fa-history me-2"></i>Dados Anteriores:
-                                                                </h6>
-                                                                <div class="log-details">
-                                                                    <?php echo renderLogData($log['dados_anteriores']); ?>
-                                                                </div>
-                                                            </div>
-                                                            <?php endif; ?>
-                                                            
-                                                            <?php if ($log['dados_novos']): ?>
-                                                            <div class="mb-3">
-                                                                <h6 class="text-success">
-                                                                    <i class="fas fa-plus-circle me-2"></i>Dados Novos:
-                                                                </h6>
-                                                                <div class="log-details">
-                                                                    <?php echo renderLogData($log['dados_novos']); ?>
-                                                                </div>
-                                                            </div>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
                                             <?php endif; ?>
                                         </div>
                                     </td>
@@ -661,9 +676,15 @@ if (!function_exists('renderLogData')) {
                     <div class="card-footer bg-white">
                         <nav aria-label="Navegação de logs">
                             <ul class="pagination justify-content-center mb-0">
+                                <?php 
+                                // Parâmetros para paginação (excluindo parâmetros de ação)
+                                $paginationParams = $_GET;
+                                unset($paginationParams['action'], $paginationParams['cleaned'], $paginationParams['deleted'], $paginationParams['page']);
+                                ?>
+                                
                                 <?php if ($logsData['current_page'] > 1): ?>
                                 <li class="page-item">
-                                    <a class="page-link" href="?<?php echo http_build_query(array_merge($_GET, ['page' => $logsData['current_page'] - 1])); ?>">
+                                    <a class="page-link" href="?<?php echo http_build_query(array_merge($paginationParams, ['page' => $logsData['current_page'] - 1])); ?>">
                                         <i class="fas fa-chevron-left"></i> Anterior
                                     </a>
                                 </li>
@@ -676,7 +697,7 @@ if (!function_exists('renderLogData')) {
                                 for ($i = $startPage; $i <= $endPage; $i++): 
                                 ?>
                                 <li class="page-item <?php echo $i == $logsData['current_page'] ? 'active' : ''; ?>">
-                                    <a class="page-link" href="?<?php echo http_build_query(array_merge($_GET, ['page' => $i])); ?>">
+                                    <a class="page-link" href="?<?php echo http_build_query(array_merge($paginationParams, ['page' => $i])); ?>">
                                         <?php echo $i; ?>
                                     </a>
                                 </li>
@@ -684,7 +705,7 @@ if (!function_exists('renderLogData')) {
                                 
                                 <?php if ($logsData['current_page'] < $logsData['pages']): ?>
                                 <li class="page-item">
-                                    <a class="page-link" href="?<?php echo http_build_query(array_merge($_GET, ['page' => $logsData['current_page'] + 1])); ?>">
+                                    <a class="page-link" href="?<?php echo http_build_query(array_merge($paginationParams, ['page' => $logsData['current_page'] + 1])); ?>">
                                         Próximo <i class="fas fa-chevron-right"></i>
                                     </a>
                                 </li>
@@ -862,7 +883,7 @@ if (!function_exists('renderLogData')) {
                             MagicKids Eventos - Sistema de Auditoria e Logs
                             <span class="mx-3">|</span>
                             <i class="fas fa-clock me-2"></i>
-                            Última atualização: <?php echo date('d/m/Y H:i:s '); ?>
+                            Última atualização: <?php echo date('d/m/Y H:i:s'); ?>
                             <span class="mx-3">|</span>
                             <i class="fas fa-database me-2" style="color: var(--info-color);"></i>
                             Monitoramento em tempo real
@@ -873,247 +894,124 @@ if (!function_exists('renderLogData')) {
         </div>
     </main>
 
-    <!-- Modal de Logout -->
-    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content logout-modal">
-                <div class="modal-header border-0 text-center">
-                    <div class="w-100">
-                        <div class="logout-icon-modal">
-                            <i class="fas fa-sign-out-alt"></i>
+    <!-- Modais de Detalhes dos Logs (FORA do main-content) -->
+    <?php if (!empty($logsData['logs'])): ?>
+        <?php foreach ($logsData['logs'] as $log): ?>
+            <?php if ($log['dados_anteriores'] || $log['dados_novos']): ?>
+            <div class="modal fade" id="logModal<?php echo $log['id']; ?>" tabindex="-1" aria-labelledby="logModalLabel<?php echo $log['id']; ?>" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="logModalLabel<?php echo $log['id']; ?>">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Detalhes do Log #<?php echo $log['id']; ?>
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                         </div>
-                        <h4 class="modal-title mt-3" id="logoutModalLabel">Confirmar Logout</h4>
+                        <div class="modal-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Usuário:</strong> <?php echo htmlspecialchars($log['usuario_nome'] ?? 'Sistema'); ?>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>IP:</strong> <?php echo htmlspecialchars($log['ip_address'] ?? 'N/A'); ?>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Ação:</strong> <?php echo htmlspecialchars($log['acao']); ?>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Data:</strong> <?php echo date('d/m/Y H:i:s', strtotime($log['data_criacao'])); ?>
+                                </div>
+                            </div>
+                            <?php if ($log['tabela_afetada']): ?>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Tabela:</strong> <code><?php echo htmlspecialchars($log['tabela_afetada']); ?></code>
+                                </div>
+                                <?php if ($log['registro_id']): ?>
+                                <div class="col-md-6">
+                                    <strong>ID do Registro:</strong> <?php echo $log['registro_id']; ?>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <?php if ($log['dados_anteriores']): ?>
+                            <div class="mb-3">
+                                <h6 class="text-primary">
+                                    <i class="fas fa-history me-2"></i>Dados Anteriores:
+                                </h6>
+                                <div class="log-details">
+                                    <?php echo renderLogData($log['dados_anteriores']); ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <?php if ($log['dados_novos']): ?>
+                            <div class="mb-3">
+                                <h6 class="text-success">
+                                    <i class="fas fa-plus-circle me-2"></i>Dados Novos:
+                                </h6>
+                                <div class="log-details">
+                                    <?php echo renderLogData($log['dados_novos']); ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-body text-center">
-                    <p class="text-muted mb-4">
-                        Olá, <strong><?php echo htmlspecialchars($currentUser['nome_completo']); ?></strong>!<br>
-                        Tem certeza que deseja sair do sistema?
-                    </p>
-                    <div class="d-flex gap-3 justify-content-center">
-                        <button type="button" class="btn btn-logout-confirm" id="confirm-logout-btn">
-                            <i class="fas fa-sign-out-alt me-2"></i>Sim, Sair
-                        </button>
-                        <button type="button" class="btn btn-cancel-logout" data-bs-dismiss="modal">
-                            <i class="fas fa-times me-2"></i>Cancelar
-                        </button>
-                    </div>
+            </div>
+            <?php endif; ?>
+        <?php endforeach; ?>
+    <?php endif; ?>
+
+    <!-- Modal de Logout Simplificado -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Logout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja sair do sistema?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <a href="logout.php" class="btn btn-danger">Sair</a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Progresso do Logout -->
-    <div class="modal fade" id="logoutProgressModal" tabindex="-1" aria-labelledby="logoutProgressLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content logout-modal">
-                <div class="modal-body text-center py-5">
-                    <div class="logout-progress-icon">
-                        <i class="fas fa-spinner fa-spin"></i>
-                    </div>
-                    <h4 class="mt-3 mb-3">Realizando Logout...</h4>
-                    <p class="text-muted mb-4">Aguarde enquanto finalizamos sua sessão</p>
-                    
-                    <div class="progress mb-3 logout-progress-bar">
-                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
-                    </div>
-                    
-                    <div class="logout-steps">
-                        <small class="text-muted">
-                            <span id="step-text">Salvando dados da sessão...</span>
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Sucesso do Logout -->
-    <div class="modal fade" id="logoutSuccessModal" tabindex="-1" aria-labelledby="logoutSuccessLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content logout-modal">
-                <div class="modal-body text-center py-5">
-                    <div class="success-icon-modal">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <h4 class="mt-3 mb-3 text-success">Logout Realizado!</h4>
-                    <p class="text-muted mb-4">
-                        Sua sessão foi finalizada com sucesso.<br>
-                        Redirecionando para a página de login...
-                    </p>
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Carregando...</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/logout.js"></script>
+    
+    <!-- Script Corrigido - Focado apenas nos modais -->
     <script>
-        // Auto refresh a cada 5 minutos (opcional - pode ser desabilitado)
-        let autoRefreshEnabled = false;
-        if (autoRefreshEnabled) {
-            setTimeout(function() {
-                window.location.reload();
-            }, 300000);
-        }
-        
-        // Confirmar limpeza de logs
-        document.querySelectorAll('[href*="action=clean"]').forEach(function(link) {
-            link.addEventListener('click', function(e) {
-                const days = this.getAttribute('href').match(/days=(\d+)/)?.[1] || 'alguns';
-                if (!confirm(`Tem certeza que deseja remover logs com mais de ${days} dias?\n\nEsta ação não pode ser desfeita e afetará o histórico de auditoria do sistema.`)) {
-                    e.preventDefault();
-                }
-            });
-        });
-
-        // Adicionar tooltips aos badges de ação
-        document.querySelectorAll('.action-badge').forEach(function(badge) {
-            const action = badge.textContent.trim();
-            let tooltip = 'Ação do sistema';
-            
-            if (action.toLowerCase().includes('login')) {
-                tooltip = 'Usuário fez login no sistema';
-            } else if (action.toLowerCase().includes('logout')) {
-                tooltip = 'Usuário fez logout do sistema';
-            } else if (action.toLowerCase().includes('criado') || action.toLowerCase().includes('cadastro')) {
-                tooltip = 'Novo registro foi criado';
-            } else if (action.toLowerCase().includes('atualizada') || action.toLowerCase().includes('atualizado')) {
-                tooltip = 'Registro foi modificado';
-            } else if (action.toLowerCase().includes('excluída') || action.toLowerCase().includes('removid')) {
-                tooltip = 'Registro foi removido';
-            } else if (action.toLowerCase().includes('check-in')) {
-                tooltip = 'Check-in de criança em evento';
-            }
-            
-            badge.setAttribute('title', tooltip);
-            badge.setAttribute('data-bs-toggle', 'tooltip');
-        });
-
-        // Inicializar tooltips do Bootstrap
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-
-        // Filtro rápido por data
         document.addEventListener('DOMContentLoaded', function() {
-            // Botões de filtro rápido
-            const quickFilters = document.createElement('div');
-            quickFilters.className = 'mb-3';
-            quickFilters.innerHTML = `
-                <div class="btn-group me-2" role="group">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setQuickDateFilter('today')">
-                        <i class="fas fa-calendar-day me-1"></i>Hoje
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setQuickDateFilter('week')">
-                        <i class="fas fa-calendar-week me-1"></i>Esta Semana
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setQuickDateFilter('month')">
-                        <i class="fas fa-calendar-alt me-1"></i>Este Mês
-                    </button>
-                </div>
-            `;
+            console.log('Página carregada - Modais configurados');
             
-            const filterSection = document.querySelector('.filter-section form');
-            if (filterSection) {
-                filterSection.parentNode.insertBefore(quickFilters, filterSection);
-            }
-        });
-
-        function setQuickDateFilter(period) {
-            const today = new Date();
-            let startDate, endDate;
-            
-            switch(period) {
-                case 'today':
-                    startDate = endDate = today.toISOString().split('T')[0];
-                    break;
-                case 'week':
-                    const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
-                    startDate = weekStart.toISOString().split('T')[0];
-                    endDate = new Date().toISOString().split('T')[0];
-                    break;
-                case 'month':
-                    startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-                    endDate = new Date().toISOString().split('T')[0];
-                    break;
-            }
-            
-            document.getElementById('start_date').value = startDate;
-            document.getElementById('end_date').value = endDate;
-            document.querySelector('.filter-section form').submit();
-        }
-
-        // Realçar logs importantes
-        document.addEventListener('DOMContentLoaded', function() {
-            const logRows = document.querySelectorAll('tbody tr');
-            logRows.forEach(function(row) {
-                const actionBadge = row.querySelector('.action-badge');
-                if (actionBadge) {
-                    const action = actionBadge.textContent.toLowerCase();
-                    if (action.includes('erro') || action.includes('falha')) {
-                        row.classList.add('table-danger');
-                    } else if (action.includes('login') && action.includes('falhado')) {
-                        row.classList.add('table-warning');
-                    }
-                }
-            });
-        });
-
-        // Add hover effects to navigation links (copiado do dashboard)
-        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-            link.addEventListener('mouseenter', function() {
-                this.style.background = 'rgba(255, 255, 255, 0.25)';
+            // Configuração simples para o logout
+            document.getElementById('logout-trigger').addEventListener('click', function(e) {
+                e.preventDefault();
+                var logoutModal = new bootstrap.Modal(document.getElementById('logoutModal'));
+                logoutModal.show();
             });
             
-            link.addEventListener('mouseleave', function() {
-                if (!this.classList.contains('active')) {
-                    this.style.background = '';
-                }
-            });
-        });
-
-        // Add floating animation to shapes (copiado do dashboard)
-        document.querySelectorAll('.shape').forEach((shape, index) => {
-            shape.addEventListener('mouseover', function() {
-                this.style.opacity = '0.1';
-                this.style.transform = 'scale(1.2)';
-            });
-            
-            shape.addEventListener('mouseout', function() {
-                this.style.opacity = '0.03';
-                this.style.transform = '';
-            });
-        });
-
-        // Add click animation to stat cards (copiado do dashboard)
-        document.querySelectorAll('.stat-card').forEach(card => {
-            card.addEventListener('click', function() {
-                this.style.transform = 'scale(0.98)';
-                setTimeout(() => {
-                    this.style.transform = '';
-                }, 150);
+            // Debug: verificar se os modais estão funcionando
+            var modalTriggers = document.querySelectorAll('.modal-trigger-btn');
+            modalTriggers.forEach(function(trigger) {
+                trigger.addEventListener('click', function() {
+                    console.log('Abrindo modal:', this.dataset.bsTarget);
+                });
             });
         });
     </script>
-    
-    <!-- Add custom CSS animation -->
-    <style>
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {
-                transform: translateY(0);
-            }
-            40% {
-                transform: translateY(-10px);
-            }
-            60% {
-                transform: translateY(-5px);
-            }
-        }
-    </style>
 </body>
 </html>

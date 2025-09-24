@@ -6,8 +6,8 @@ ini_set('display_errors', 1);
 // Configurar timezone para Brasil
 date_default_timezone_set('America/Sao_Paulo');
 
-require_once 'includes/auth.php';
-require_once 'controllers/EventosController.php';
+require_once '../includes/auth.php';
+require_once '../controllers/EventosController.php';
 
 // Verificar se o usuário está logado
 requireLogin();
@@ -123,8 +123,8 @@ function hasUserPermission($permission) {
     <title>Dashboard - MagicKids Eventos</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/dashboard_eventos.css">
-    <link rel="stylesheet" href="assets/css/logout_modal.css">
+    <link rel="stylesheet" href="../assets/css/dashboard_eventos.css">
+    <link rel="stylesheet" href="../assets/css/logout_modal.css">
 </head>
 <body>
     <!-- Floating Shapes -->
@@ -168,7 +168,7 @@ function hasUserPermission($permission) {
             
             <?php if (hasUserPermission('cadastro_crianca')): ?>
             <li class="nav-item">
-                <a class="nav-link" href="cadastro_crianca.php">
+                <a class="nav-link" href="/Faculdade/cadastro_crianca.php">
                     <i class="fas fa-user-plus"></i>Cadastrar Criança
                 </a>
             </li>
@@ -678,7 +678,7 @@ function hasUserPermission($permission) {
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/logout.js"></script>
+    <script src="../assets/js/logout.js"></script>
     <script>
         // Auto refresh dashboard every 5 minutes
         setTimeout(function() {

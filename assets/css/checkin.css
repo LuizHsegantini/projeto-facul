@@ -15,7 +15,7 @@ body {
     min-height: 100vh;
 }
 
-/* Sidebar igual ao dashboard_eventos.css */
+/* Sidebar IDÊNTICO ao dashboard_eventos.css */
 .sidebar {
     background: linear-gradient(180deg, var(--primary-color) 0%, var(--accent-color) 100%);
     min-height: 100vh;

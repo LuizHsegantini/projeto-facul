@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         if (loginDirect($username, $password)) {
             // Redirecionar para dashboard após login bem-sucedido
-            header('Location: dashboard_eventos.php');
+            header('Location: /faculdade/models/dashboard_eventos.php');
             exit();
         } else {
             $error = 'Usuário ou senha incorretos.';

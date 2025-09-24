@@ -3,8 +3,8 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-require_once 'includes/auth.php';
-require_once 'controllers/ProfileController.php';
+require_once '../includes/auth.php';
+require_once '../controllers/ProfileController.php';
 
 // Verificar se o usuário está logado
 requireLogin();
@@ -108,7 +108,7 @@ function getPerfilBadgeClass($perfil) {
     <title>Perfil - MagicKids Eventos</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/profile.css">
+    <link rel="stylesheet" href="../assets/css/profile.css">
 </head>
 <body>
     <!-- Floating Shapes -->

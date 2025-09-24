@@ -1,6 +1,6 @@
 <?php
 // controllers/EventosController.php
-require_once 'config/database.php';
+require_once '../config/database.php';
 
 class EventosController {
     private $conn;

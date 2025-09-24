@@ -3,8 +3,8 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-require_once 'includes/auth.php';
-require_once 'controllers/FuncionariosController.php';
+require_once '../includes/auth.php';
+require_once '../controllers/FuncionariosController.php';
 
 requireLogin();
 
@@ -144,6 +144,82 @@ $recentFuncionarios = $controller->getRecentFuncionarios();
 
 $currentUserName = $currentUser['nome_completo'] ?? ($currentUser['nome'] ?? '');
 $currentUserPerfil = $currentUser['perfil'] ?? '';
+
+// Definir permissões por perfil (igual ao dashboard)
+$permissions = [
+    'administrador' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => true,
+        'funcionarios' => true,
+        'relatorios' => true,
+        'logs' => true,
+        'quick_actions' => ['cadastro_crianca', 'criar_evento', 'checkin', 'relatorios']
+    ],
+    'coordenador' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => true,
+        'funcionarios' => false,
+        'relatorios' => true,
+        'logs' => false,
+        'quick_actions' => ['cadastro_crianca', 'criar_evento', 'checkin', 'relatorios']
+    ],
+    'animador' => [
+        'dashboard' => true,
+        'eventos' => true, // visualizar apenas
+        'criancas' => true, // visualizar apenas
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false,
+        'quick_actions' => ['cadastro_crianca', 'checkin']
+    ],
+    'monitor' => [
+        'dashboard' => true,
+        'eventos' => true, // visualizar apenas
+        'criancas' => true, // visualizar apenas
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false,
+        'quick_actions' => ['cadastro_crianca', 'checkin']
+    ],
+    'auxiliar' => [
+        'dashboard' => true,
+        'eventos' => false,
+        'criancas' => true, // visualizar apenas
+        'cadastro_crianca' => false,
+        'checkin' => true,
+        'atividades' => false,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false,
+        'quick_actions' => ['checkin']
+    ]
+];
+
+$userPermissions = $permissions[$currentUser['perfil']] ?? $permissions['auxiliar'];
+
+function hasUserPermission($permission) {
+    global $userPermissions;
+    return isset($userPermissions[$permission]) && $userPermissions[$permission];
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -153,43 +229,123 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
     <title>Funcionarios - MagicKids</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link  rel="stylesheet" href="assets/css/funcionarios.css">
+    <link rel="stylesheet" href="../assets/css/funcionarios.css">
 </head>
 <body>
-    <div class="sidebar">
+    <!-- Floating Shapes - igual ao dashboard -->
+    <div class="floating-shapes">
+        <i class="fas fa-users fa-6x shape"></i>
+        <i class="fas fa-user-tie fa-5x shape"></i>
+        <i class="fas fa-star fa-4x shape"></i>
+    </div>
+
+    <!-- Sidebar padronizada igual ao dashboard_eventos.php -->
+    <nav class="sidebar">
         <div>
             <div class="company-info">
-                <i class="fas fa-hat-wizard"></i>
-                <div class="company-name">MagicKids</div>
-                <p class="company-tagline">Centro de Eventos</p>
+                <i class="fas fa-magic"></i>
+                <div class="fw-bold">MagicKids Eventos</div>
+                <p class="mb-0">Sistema de gestão</p>
             </div>
-            <nav class="nav flex-column">
-                <a class="nav-link" href="dashboard_eventos.php"><i class="fas fa-chart-line me-2"></i>Dashboard</a>
-                <a class="nav-link" href="eventos.php"><i class="fas fa-calendar-check me-2"></i>Eventos</a>
-                <a class="nav-link" href="cadastro_crianca.php"><i class="fas fa-clipboard-list me-2"></i>Cadastrar crianca</a>
-                <a class="nav-link" href="criancas.php"><i class="fas fa-children me-2"></i>Criancas</a>
-                <a class="nav-link" href="checkin.php"><i class="fas fa-clipboard-check me-2"></i>Check-in</a>
-                <a class="nav-link active" href="funcionarios.php"><i class="fas fa-people-group me-2"></i>Funcionarios</a>
-                <a class="nav-link" href="logs.php"><i class="fas fa-clipboard-list me-2"></i>Logs</a>
-                <a class="nav-link text-warning" href="logout.php"><i class="fas fa-right-from-bracket me-2"></i>Sair</a>
-            </nav>
-        </div>
-        <div class="sidebar-footer text-white">
+        
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="dashboard_eventos.php">
+                    <i class="fas fa-tachometer-alt"></i>Dashboard
+                </a>
+            </li>
+            
+            <?php if (hasUserPermission('eventos')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="eventos.php">
+                    <i class="fas fa-calendar-alt"></i>Eventos
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('criancas')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="criancas.php">
+                    <i class="fas fa-child"></i>Crianças
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('cadastro_crianca')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="cadastro_crianca.php">
+                    <i class="fas fa-user-plus"></i>Cadastrar Criança
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('checkin')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="checkin.php">
+                    <i class="fas fa-clipboard-check"></i>Check-in/Check-out
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('atividades')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="atividades.php">
+                    <i class="fas fa-gamepad"></i>Atividades
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('equipes')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="equipes.php">
+                    <i class="fas fa-users"></i>Equipes
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('funcionarios')): ?>
+            <li class="nav-item">
+                <a class="nav-link active" href="funcionarios.php">
+                    <i class="fas fa-user-tie"></i>Funcionários
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('relatorios')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="relatorios.php">
+                    <i class="fas fa-chart-bar"></i>Relatórios
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('logs')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="logs.php">
+                    <i class="fas fa-history"></i>Logs do Sistema
+                </a>
+            </li>
+            <?php endif; ?>
+        </ul>
+    </nav>
+        
+        <div class="sidebar-footer">
             <div class="fw-semibold">Logado como</div>
             <div><?php echo htmlspecialchars($currentUserName, ENT_QUOTES, 'UTF-8'); ?></div>
             <div class="text-white-50"><?php echo htmlspecialchars($currentUserPerfil, ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
-    </div>
+    </nav>
+
     <main class="main-content">
         <div class="header-bar">
             <div>
-                <h1>Funcionarios</h1>
+                <h1>Funcionários</h1>
                 <p>Gerencie acessos e perfis da equipe MagicKids.</p>
             </div>
             <?php if ($canManageFuncionarios): ?>
             <div class="d-flex gap-2 flex-wrap">
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createFuncionarioModal">
-                    <i class="fas fa-user-plus me-2"></i>Novo funcionario
+                    <i class="fas fa-user-plus me-2"></i>Novo funcionário
                 </button>
             </div>
             <?php endif; ?>
@@ -207,7 +363,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                 <div class="stat-card">
                     <div class="stat-title">Total cadastrados</div>
                     <div class="stat-number"><?php echo $totalFuncionarios; ?></div>
-                    <div class="text-muted small">Usuarios ativos no sistema</div>
+                    <div class="text-muted small">Usuários ativos no sistema</div>
                 </div>
             </div>
             <div class="col-md-4">
@@ -221,7 +377,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                 <div class="stat-card success">
                     <div class="stat-title">Perfis ativos</div>
                     <div class="stat-number"><?php echo $activeProfileCount; ?></div>
-                    <div class="text-muted small">Tipos de perfil com usuarios</div>
+                    <div class="text-muted small">Tipos de perfil com usuários</div>
                 </div>
             </div>
         </div>
@@ -260,18 +416,18 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
             <div class="col-xl-8">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Lista de funcionarios</h5>
+                        <h5 class="mb-0">Lista de funcionários</h5>
                         <?php if ($canManageFuncionarios): ?>
-                        <span class="badge bg-light text-dark">Permissoes de edicao habilitadas</span>
+                        <span class="badge bg-light text-dark">Permissões de edição habilitadas</span>
                         <?php else: ?>
-                        <span class="badge bg-light text-muted">Visualizacao apenas</span>
+                        <span class="badge bg-light text-muted">Visualização apenas</span>
                         <?php endif; ?>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead>
                                 <tr>
-                                    <th>Funcionario</th>
+                                    <th>Funcionário</th>
                                     <th>Cargo</th>
                                     <th>Perfil</th>
                                     <th>Login</th>
@@ -279,7 +435,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                                     <th>Criado em</th>
                                     <th>Atualizado em</th>
                                     <?php if ($canManageFuncionarios): ?>
-                                    <th class="text-end">Acoes</th>
+                                    <th class="text-end">Ações</th>
                                     <?php endif; ?>
                                 </tr>
                             </thead>
@@ -287,7 +443,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                                 <?php if (empty($funcionarios)): ?>
                                 <tr>
                                     <td colspan="<?php echo $canManageFuncionarios ? '8' : '7'; ?>" class="text-center text-muted py-5">
-                                        Nenhum funcionario encontrado para os filtros selecionados.
+                                        Nenhum funcionário encontrado para os filtros selecionados.
                                     </td>
                                 </tr>
                                 <?php else: ?>
@@ -307,7 +463,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                                                 <div class="fw-semibold">
                                                     <?php echo htmlspecialchars($funcionario['nome_completo'], ENT_QUOTES, 'UTF-8'); ?>
                                                     <?php if ($isCurrent): ?>
-                                                    <span class="badge bg-warning text-dark ms-2">Voce</span>
+                                                    <span class="badge bg-warning text-dark ms-2">Você</span>
                                                     <?php endif; ?>
                                                 </div>
                                                 <div class="text-muted small"><?php echo htmlspecialchars($funcionario['email'], ENT_QUOTES, 'UTF-8'); ?></div>
@@ -402,14 +558,15 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                 </div>
             </div>
         </div>
-    </main>
+    
     <?php if ($canManageFuncionarios): ?>
+    <!-- Modal de Criar Funcionário -->
     <div class="modal fade" id="createFuncionarioModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <form class="modal-content" method="post">
                 <input type="hidden" name="action" value="create">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-user-plus me-2 text-primary"></i>Novo funcionario</h5>
+                    <h5 class="modal-title"><i class="fas fa-user-plus me-2 text-primary"></i>Novo funcionário</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
                 <div class="modal-body">
@@ -446,7 +603,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                         <div class="col-md-6">
                             <label for="createSenha" class="form-label">Senha inicial</label>
                             <input type="password" class="form-control" id="createSenha" name="senha" minlength="6" required>
-                            <div class="form-text">Minimo de 6 caracteres.</div>
+                            <div class="form-text">Mínimo de 6 caracteres.</div>
                         </div>
                     </div>
                 </div>
@@ -458,13 +615,14 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
         </div>
     </div>
 
+    <!-- Modal de Editar Funcionário -->
     <div class="modal fade" id="editFuncionarioModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <form class="modal-content" method="post">
                 <input type="hidden" name="action" value="update">
                 <input type="hidden" name="id" id="editFuncionarioId">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-user-gear me-2 text-primary"></i>Editar funcionario</h5>
+                    <h5 class="modal-title"><i class="fas fa-user-gear me-2 text-primary"></i>Editar funcionário</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
                 <div class="modal-body">
@@ -505,24 +663,25 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar alteracoes</button>
+                    <button type="submit" class="btn btn-primary">Salvar alterações</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Modal de Deletar Funcionário -->
     <div class="modal fade" id="deleteFuncionarioModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <form class="modal-content" method="post">
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="id" id="deleteFuncionarioId">
                 <div class="modal-header">
-                    <h5 class="modal-title text-danger"><i class="fas fa-triangle-exclamation me-2"></i>Remover funcionario</h5>
+                    <h5 class="modal-title text-danger"><i class="fas fa-triangle-exclamation me-2"></i>Remover funcionário</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="mb-0">Tem certeza de que deseja remover o funcionario <strong class="funcionario-name"></strong>?</p>
-                    <p class="text-muted small mb-0">Esta acao nao pode ser desfeita.</p>
+                    <p class="mb-0">Tem certeza de que deseja remover o funcionário <strong class="funcionario-name"></strong>?</p>
+                    <p class="text-muted small mb-0">Esta ação não pode ser desfeita.</p>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -533,9 +692,11 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
     </div>
     <?php endif; ?>
 
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Modal de edição
             var editModal = document.getElementById('editFuncionarioModal');
             if (editModal) {
                 editModal.addEventListener('show.bs.modal', function (event) {
@@ -555,6 +716,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                 });
             }
 
+            // Modal de exclusão
             var deleteModal = document.getElementById('deleteFuncionarioModal');
             if (deleteModal) {
                 deleteModal.addEventListener('show.bs.modal', function (event) {
@@ -570,6 +732,42 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                     }
                 });
             }
+
+            // Animações interativas
+            document.querySelectorAll('.stat-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 150);
+                });
+            });
+
+            // Efeitos hover na sidebar
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                link.addEventListener('mouseenter', function() {
+                    this.style.background = 'rgba(255, 255, 255, 0.25)';
+                });
+                
+                link.addEventListener('mouseleave', function() {
+                    if (!this.classList.contains('active')) {
+                        this.style.background = '';
+                    }
+                });
+            });
+
+            // Animação das shapes flutuantes
+            document.querySelectorAll('.shape').forEach((shape, index) => {
+                shape.addEventListener('mouseover', function() {
+                    this.style.opacity = '0.1';
+                    this.style.transform = 'scale(1.2)';
+                });
+                
+                shape.addEventListener('mouseout', function() {
+                    this.style.opacity = '0.03';
+                    this.style.transform = '';
+                });
+            });
         });
     </script>
 </body>

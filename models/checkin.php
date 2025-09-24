@@ -3,9 +3,9 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-require_once 'includes/auth.php';
-require_once 'controllers/EventosController.php';
-require_once 'controllers/CriancasController.php';
+require_once '../includes/auth.php';
+require_once '../controllers/EventosController.php';
+require_once '../controllers/CriancasController.php';
 
 // Verificar se o usuário está logado
 requireLogin();
@@ -58,6 +58,77 @@ if ($evento_id) {
 
 // Buscar todos os check-ins/check-outs recentes
 $checkins_recentes = $criancasController->getCriancasCheckin();
+
+// Definir permissões por perfil (igual ao dashboard)
+$permissions = [
+    'administrador' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => true,
+        'funcionarios' => true,
+        'relatorios' => true,
+        'logs' => true
+    ],
+    'coordenador' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => true,
+        'funcionarios' => false,
+        'relatorios' => true,
+        'logs' => false
+    ],
+    'animador' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false
+    ],
+    'monitor' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false
+    ],
+    'auxiliar' => [
+        'dashboard' => true,
+        'eventos' => false,
+        'criancas' => true,
+        'cadastro_crianca' => false,
+        'checkin' => true,
+        'atividades' => false,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false
+    ]
+];
+
+$userPermissions = $permissions[$currentUser['perfil']] ?? $permissions['auxiliar'];
+
+function hasUserPermission($permission) {
+    global $userPermissions;
+    return isset($userPermissions[$permission]) && $userPermissions[$permission];
+}
 ?>
 
 <!DOCTYPE html>
@@ -68,12 +139,20 @@ $checkins_recentes = $criancasController->getCriancasCheckin();
     <title>Check-in/Check-out - MagicKids</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/checkin.css">
+    <link rel="stylesheet" href="../assets/css/checkin.css">
 </head>
 <body>
-    <!-- Sidebar -->
+    <!-- Floating Shapes -->
+    <div class="floating-shapes">
+        <i class="fas fa-birthday-cake fa-6x shape"></i>
+        <i class="fas fa-child fa-5x shape"></i>
+        <i class="fas fa-heart fa-4x shape"></i>
+    </div>
+
+    <!-- Sidebar IDÊNTICO ao dashboard_eventos.php -->
     <nav class="sidebar">
-        <div class="company-info">
+        <div>
+            <div class="company-info">
                 <i class="fas fa-magic"></i>
                 <div class="fw-bold">MagicKids Eventos</div>
                 <p class="mb-0">Sistema de gestão</p>
@@ -82,48 +161,78 @@ $checkins_recentes = $criancasController->getCriancasCheckin();
         <ul class="nav flex-column">
             <li class="nav-item">
                 <a class="nav-link" href="dashboard_eventos.php">
-                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    <i class="fas fa-tachometer-alt"></i>Dashboard
                 </a>
             </li>
+            
+            <?php if (hasUserPermission('eventos')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="eventos.php">
-                    <i class="fas fa-calendar-star me-2"></i>Eventos
+                    <i class="fas fa-calendar-alt"></i>Eventos
                 </a>
             </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('criancas')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="criancas.php">
-                    <i class="fas fa-child me-2"></i>Crianças
+                    <i class="fas fa-child"></i>Crianças
                 </a>
             </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('cadastro_crianca')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="cadastro_crianca.php">
-                    <i class="fas fa-user-plus me-2"></i>Cadastrar Criança
+                    <i class="fas fa-user-plus"></i>Cadastrar Criança
                 </a>
             </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('checkin')): ?>
             <li class="nav-item">
                 <a class="nav-link active" href="checkin.php">
-                    <i class="fas fa-clipboard-check me-2"></i>Check-in/Check-out
+                    <i class="fas fa-clipboard-check"></i>Check-in/Check-out
                 </a>
             </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('atividades')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="atividades.php">
-                    <i class="fas fa-gamepad me-2"></i>Atividades
+                    <i class="fas fa-gamepad"></i>Atividades
                 </a>
             </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('equipes')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="equipes.php">
-                    <i class="fas fa-users me-2"></i>Equipes
+                    <i class="fas fa-users"></i>Equipes
                 </a>
             </li>
-            <?php if (hasPermission('administrador')): ?>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('funcionarios')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="funcionarios.php">
-                    <i class="fas fa-user-tie me-2"></i>Funcionários
+                    <i class="fas fa-user-tie"></i>Funcionários
                 </a>
             </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('relatorios')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="relatorios.php">
-                    <i class="fas fa-chart-bar me-2"></i>Relatórios
+                    <i class="fas fa-chart-bar"></i>Relatórios
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('logs')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="logs.php">
+                    <i class="fas fa-history"></i>Logs do Sistema
                 </a>
             </li>
             <?php endif; ?>
@@ -432,143 +541,208 @@ $checkins_recentes = $criancasController->getCriancasCheckin();
         </div>
     </div>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function changeEvento() {
-            const select = document.getElementById('eventoSelect');
-            const eventoId = select.value;
-            
-            // Construir a URL mantendo outros parâmetros se necessário
-            const url = new URL(window.location.href);
-            
-            if (eventoId) {
-                url.searchParams.set('evento', eventoId);
-            } else {
-                url.searchParams.delete('evento');
-            }
-            
-            // Redirecionar para a nova URL
-            window.location.href = url.toString();
+    <div class="modal fade" id="confirmCheckinModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Check-in</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="checkinConfirmText">Confirmar CHECK-IN de <span id="checkinChildName"></span>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" id="confirmCheckinBtn">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Check-out -->
+<div class="modal fade" id="confirmCheckoutModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Check-out</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="checkoutConfirmText">Confirmar CHECK-OUT de <span id="checkoutChildName"></span>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" id="confirmCheckoutBtn">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Variáveis globais para armazenar os dados temporários
+    let currentEventoId = null;
+    let currentCriancaId = null;
+    
+    function changeEvento() {
+        const select = document.getElementById('eventoSelect');
+        const eventoId = select.value;
+        
+        const url = new URL(window.location.href);
+        
+        if (eventoId) {
+            url.searchParams.set('evento', eventoId);
+        } else {
+            url.searchParams.delete('evento');
         }
         
-        function realizarCheckin(eventoId, criancaId, nomeCrianca) {
-            if (confirm(`Confirmar CHECK-IN de ${nomeCrianca}?`)) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.innerHTML = `
-                    <input type="hidden" name="action" value="checkin">
-                    <input type="hidden" name="evento_id" value="${eventoId}">
-                    <input type="hidden" name="crianca_id" value="${criancaId}">
-                `;
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
+        window.location.href = url.toString();
+    }
+    
+    function realizarCheckin(eventoId, criancaId, nomeCrianca) {
+        currentEventoId = eventoId;
+        currentCriancaId = criancaId;
         
-        function realizarCheckout(eventoId, criancaId, nomeCrianca) {
-            if (confirm(`Confirmar CHECK-OUT de ${nomeCrianca}?`)) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.innerHTML = `
-                    <input type="hidden" name="action" value="checkout">
-                    <input type="hidden" name="evento_id" value="${eventoId}">
-                    <input type="hidden" name="crianca_id" value="${criancaId}">
-                `;
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
+        document.getElementById('checkinChildName').textContent = nomeCrianca;
         
-        function verDetalhes(crianca) {
-            const content = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Informações da Criança</h6>
-                        <p><strong>Nome:</strong> ${crianca.nome_completo}</p>
-                        <p><strong>Idade:</strong> ${crianca.idade} anos</p>
-                        <p><strong>Responsável:</strong> ${crianca.nome_responsavel}</p>
-                        <p><strong>Telefone:</strong> ${crianca.telefone_principal}</p>
-                        ${crianca.alergia_alimentos ? `<p><strong>Alergia Alimentos:</strong> <span class="text-danger">${crianca.alergia_alimentos}</span></p>` : ''}
-                        ${crianca.alergia_medicamentos ? `<p><strong>Alergia Medicamentos:</strong> <span class="text-danger">${crianca.alergia_medicamentos}</span></p>` : ''}
-                        ${crianca.observacoes_saude ? `<p><strong>Observações:</strong> ${crianca.observacoes_saude}</p>` : ''}
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Status no Evento</h6>
-                        <p><strong>Status:</strong> <span class="badge bg-info">${crianca.status_participacao}</span></p>
-                        ${crianca.data_checkin ? `<p><strong>Check-in:</strong> ${new Date(crianca.data_checkin).toLocaleString('pt-BR')}</p>` : ''}
-                        ${crianca.data_checkout ? `<p><strong>Check-out:</strong> ${new Date(crianca.data_checkout).toLocaleString('pt-BR')}</p>` : ''}
-                        ${crianca.usuario_checkin_nome ? `<p><strong>Check-in por:</strong> ${crianca.usuario_checkin_nome}</p>` : ''}
-                        ${crianca.usuario_checkout_nome ? `<p><strong>Check-out por:</strong> ${crianca.usuario_checkout_nome}</p>` : ''}
-                    </div>
-                </div>
+        const modal = new bootstrap.Modal(document.getElementById('confirmCheckinModal'));
+        modal.show();
+    }
+    
+    function realizarCheckout(eventoId, criancaId, nomeCrianca) {
+        currentEventoId = eventoId;
+        currentCriancaId = criancaId;
+        
+        document.getElementById('checkoutChildName').textContent = nomeCrianca;
+        
+        const modal = new bootstrap.Modal(document.getElementById('confirmCheckoutModal'));
+        modal.show();
+    }
+    
+    // Configurar os botões de confirmação
+    document.getElementById('confirmCheckinBtn').addEventListener('click', function() {
+        if (currentEventoId && currentCriancaId) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = `
+                <input type="hidden" name="action" value="checkin">
+                <input type="hidden" name="evento_id" value="${currentEventoId}">
+                <input type="hidden" name="crianca_id" value="${currentCriancaId}">
             `;
-            
-            document.getElementById('detailsContent').innerHTML = content;
-            new bootstrap.Modal(document.getElementById('detailsModal')).show();
+            document.body.appendChild(form);
+            form.submit();
         }
         
-        // Busca rápida
-        let searchTimeout;
-        document.getElementById('quickSearch').addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            const termo = this.value.trim();
-            
-            if (termo.length < 2) {
-                document.getElementById('searchResults').innerHTML = '';
-                return;
-            }
-            
-            searchTimeout = setTimeout(() => {
-                // Implementar busca AJAX aqui
-                fetch('ajax/buscar_criancas.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ termo: termo })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    let html = '';
-                    if (data.success && data.criancas.length > 0) {
-                        html = '<div class="list-group">';
-                        data.criancas.forEach(crianca => {
-                            html += `
-                                <div class="list-group-item list-group-item-action">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-1">${crianca.nome_completo}</h6>
-                                        <small>${crianca.idade} anos</small>
-                                    </div>
-                                    <p class="mb-1">Responsável: ${crianca.nome_responsavel}</p>
-                                    <small>Tel: ${crianca.telefone_principal}</small>
-                                </div>
-                            `;
-                        });
-                        html += '</div>';
-                    } else {
-                        html = '<div class="alert alert-info">Nenhuma criança encontrada.</div>';
-                    }
-                    document.getElementById('searchResults').innerHTML = html;
-                })
-                .catch(error => {
-                    document.getElementById('searchResults').innerHTML = `
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            Erro na busca. Tente novamente.
-                        </div>
-                    `;
-                });
-            }, 300);
-        });
+        // Fechar o modal
+        bootstrap.Modal.getInstance(document.getElementById('confirmCheckinModal')).hide();
+    });
+    
+    document.getElementById('confirmCheckoutBtn').addEventListener('click', function() {
+        if (currentEventoId && currentCriancaId) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = `
+                <input type="hidden" name="action" value="checkout">
+                <input type="hidden" name="evento_id" value="${currentEventoId}">
+                <input type="hidden" name="crianca_id" value="${currentCriancaId}">
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        }
         
-        // Auto-refresh a cada 30 segundos se estiver em um evento
-        <?php if ($evento_id): ?>
-        setInterval(function() {
-            if (document.visibilityState === 'visible') {
-                location.reload();
-            }
-        }, 30000);
-        <?php endif; ?>
-    </script>
+        // Fechar o modal
+        bootstrap.Modal.getInstance(document.getElementById('confirmCheckoutModal')).hide();
+    });
+    
+    function verDetalhes(crianca) {
+        const content = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Informações da Criança</h6>
+                    <p><strong>Nome:</strong> ${crianca.nome_completo}</p>
+                    <p><strong>Idade:</strong> ${crianca.idade} anos</p>
+                    <p><strong>Responsável:</strong> ${crianca.nome_responsavel}</p>
+                    <p><strong>Telefone:</strong> ${crianca.telefone_principal}</p>
+                    ${crianca.alergia_alimentos ? `<p><strong>Alergia Alimentos:</strong> <span class="text-danger">${crianca.alergia_alimentos}</span></p>` : ''}
+                    ${crianca.alergia_medicamentos ? `<p><strong>Alergia Medicamentos:</strong> <span class="text-danger">${crianca.alergia_medicamentos}</span></p>` : ''}
+                    ${crianca.observacoes_saude ? `<p><strong>Observações:</strong> ${crianca.observacoes_saude}</p>` : ''}
+                </div>
+                <div class="col-md-6">
+                    <h6>Status no Evento</h6>
+                    <p><strong>Status:</strong> <span class="badge bg-info">${crianca.status_participacao}</span></p>
+                    ${crianca.data_checkin ? `<p><strong>Check-in:</strong> ${new Date(crianca.data_checkin).toLocaleString('pt-BR')}</p>` : ''}
+                    ${crianca.data_checkout ? `<p><strong>Check-out:</strong> ${new Date(crianca.data_checkout).toLocaleString('pt-BR')}</p>` : ''}
+                    ${crianca.usuario_checkin_nome ? `<p><strong>Check-in por:</strong> ${crianca.usuario_checkin_nome}</p>` : ''}
+                    ${crianca.usuario_checkout_nome ? `<p><strong>Check-out por:</strong> ${crianca.usuario_checkout_nome}</p>` : ''}
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('detailsContent').innerHTML = content;
+        new bootstrap.Modal(document.getElementById('detailsModal')).show();
+    }
+    
+    // Busca rápida (mantido igual)
+    let searchTimeout;
+    document.getElementById('quickSearch').addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const termo = this.value.trim();
+        
+        if (termo.length < 2) {
+            document.getElementById('searchResults').innerHTML = '';
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            fetch('ajax/buscar_criancas.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ termo: termo })
+            })
+            .then(response => response.json())
+            .then(data => {
+                let html = '';
+                if (data.success && data.criancas.length > 0) {
+                    html = '<div class="list-group">';
+                    data.criancas.forEach(crianca => {
+                        html += `
+                            <div class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">${crianca.nome_completo}</h6>
+                                    <small>${crianca.idade} anos</small>
+                                </div>
+                                <p class="mb-1">Responsável: ${crianca.nome_responsavel}</p>
+                                <small>Tel: ${crianca.telefone_principal}</small>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                } else {
+                    html = '<div class="alert alert-info">Nenhuma criança encontrada.</div>';
+                }
+                document.getElementById('searchResults').innerHTML = html;
+            })
+            .catch(error => {
+                document.getElementById('searchResults').innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Erro na busca. Tente novamente.
+                    </div>
+                `;
+            });
+        }, 300);
+    });
+    
+    // Auto-refresh a cada 30 segundos se estiver em um evento
+    <?php if ($evento_id): ?>
+    setInterval(function() {
+        if (document.visibilityState === 'visible') {
+            location.reload();
+        }
+    }, 30000);
+    <?php endif; ?>
+</script>
 </body>
 </html>

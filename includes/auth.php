@@ -92,7 +92,7 @@ function validateSession() {
 // Verificar se o usuário está logado
 function requireLogin() {
     if (!validateSession()) {
-        header('Location: login.php?error=' . urlencode('Você precisa estar logado'));
+        header('Location: /Faculdade/login.php?error=' . urlencode('Você precisa estar logado'));
         exit();
     }
 }
@@ -100,7 +100,7 @@ function requireLogin() {
 // Função para verificar autenticação com perfil específico
 function checkAuth($required_profile = null) {
     if (!validateSession()) {
-        header('Location: login.php?error=' . urlencode('Você precisa estar logado para acessar esta página'));
+            header('Location: /Faculdade/login.php?error=' . urlencode('Você precisa estar logado para acessar esta página'));
         exit();
     }
     
@@ -267,14 +267,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         performLogout();
         
         // Sempre redirecionar para login com sucesso (sem AJAX problemático)
-        header('Location: login.php?logout=visual_success');
+        header('Location: /Faculdade/login.php?logout=visual_success');
+
         exit();
         
     } catch (Exception $e) {
         error_log("Erro no logout: " . $e->getMessage());
         
         // Em caso de erro, ainda assim redirecionar
-        header('Location: login.php?logout=error&msg=' . urlencode($e->getMessage()));
+        header('Location: /Faculdade/login.php?logout=error&msg=' . urlencode($e->getMessage()));
         exit();
     }
 }

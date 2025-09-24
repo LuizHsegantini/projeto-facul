@@ -3,8 +3,8 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-require_once 'includes/auth.php';
-require_once 'controllers/RelatoriosController.php';
+require_once '../includes/auth.php';
+require_once '../controllers/RelatoriosController.php';
 
 date_default_timezone_set('America/Sao_Paulo');
 
@@ -16,31 +16,72 @@ $currentUser = getCurrentUser();
 // Definir permissões por perfil
 $permissions = [
     'administrador' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => true,
+        'funcionarios' => true,
         'relatorios' => true,
-        'export' => true,
-        'view_all' => true
+        'logs' => true,
+        'quick_actions' => ['cadastro_crianca', 'criar_evento', 'checkin', 'relatorios']
     ],
     'coordenador' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => true,
+        'funcionarios' => false,
         'relatorios' => true,
-        'export' => true,
-        'view_all' => true
+        'logs' => false,
+        'quick_actions' => ['cadastro_crianca', 'criar_evento', 'checkin', 'relatorios']
     ],
     'animador' => [
-        'relatorios' => true,
-        'export' => false,
-        'view_all' => false
+        'dashboard' => true,
+        'eventos' => true, // visualizar apenas
+        'criancas' => true, // visualizar apenas
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false,
+        'quick_actions' => ['cadastro_crianca', 'checkin']
     ],
     'monitor' => [
-        'relatorios' => true,
-        'export' => false,
-        'view_all' => false
+        'dashboard' => true,
+        'eventos' => true, // visualizar apenas
+        'criancas' => true, // visualizar apenas
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false,
+        'quick_actions' => ['cadastro_crianca', 'checkin']
     ],
     'auxiliar' => [
+        'dashboard' => true,
+        'eventos' => false,
+        'criancas' => true, // visualizar apenas
+        'cadastro_crianca' => false,
+        'checkin' => true,
+        'atividades' => false,
+        'equipes' => false,
+        'funcionarios' => false,
         'relatorios' => false,
-        'export' => false,
-        'view_all' => false
+        'logs' => false,
+        'quick_actions' => ['checkin']
     ]
 ];
+
 
 $userPermissions = $permissions[$currentUser['perfil']] ?? $permissions['auxiliar'];
 
@@ -103,9 +144,10 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
     <title>Relatórios - MagicKids</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/relatorios.css">    
+    <link rel="stylesheet" href="../assets/css/relatorios.css">    
 </head>
 <body>
+    <!-- Sidebar -->
     <!-- Sidebar -->
     <nav class="sidebar">
         <div>
@@ -114,26 +156,87 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                 <div class="fw-bold">MagicKids Eventos</div>
                 <p class="mb-0">Sistema de gestão</p>
             </div>
-            <nav class="nav flex-column">
-                <a class="nav-link" href="dashboard_eventos.php"><i class="fas fa-chart-line me-2"></i>Dashboard</a>
-                <a class="nav-link" href="eventos.php"><i class="fas fa-calendar-check me-2"></i>Eventos</a>
-                <a class="nav-link" href="cadastro_crianca.php"><i class="fas fa-clipboard-list me-2"></i>Cadastrar criança</a>
-                <a class="nav-link" href="criancas.php"><i class="fas fa-children me-2"></i>Crianças</a>
-                <a class="nav-link" href="checkin.php"><i class="fas fa-clipboard-check me-2"></i>Check-in</a>
-                <a class="nav-link" href="funcionarios.php"><i class="fas fa-people-group me-2"></i>Funcionários</a>
-                <a class="nav-link" href="atividades.php"><i class="fas fa-list-check me-2"></i>Atividades</a>
-                <a class="nav-link" href="equipes.php"><i class="fas fa-people-arrows me-2"></i>Equipes</a>
-                <a class="nav-link active" href="relatorios.php"><i class="fas fa-chart-pie me-2"></i>Relatórios</a>
-                <a class="nav-link" href="logs.php"><i class="fas fa-clipboard-list me-2"></i>Logs</a>
-            </nav>
-        </div>
-        <div class="p-3 border-top border-white-25 text-white-75">
-            <div class="fw-semibold">Logado como</div>
-            <div><?php echo htmlspecialchars($currentUserName, ENT_QUOTES, 'UTF-8'); ?></div>
-            <div class="small">Perfil: <?php echo htmlspecialchars($currentUserPerfil, ENT_QUOTES, 'UTF-8'); ?></div>
-        </div>
+        
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active" href="dashboard_eventos.php">
+                    <i class="fas fa-tachometer-alt"></i>Dashboard
+                </a>
+            </li>
+            
+            <?php if (hasUserPermission('eventos')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="eventos.php">
+                    <i class="fas fa-calendar-alt"></i>Eventos
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('criancas')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="criancas.php">
+                    <i class="fas fa-child"></i>Crianças
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('cadastro_crianca')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="cadastro_crianca.php">
+                    <i class="fas fa-user-plus"></i>Cadastrar Criança
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('checkin')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="checkin.php">
+                    <i class="fas fa-clipboard-check"></i>Check-in/Check-out
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('atividades')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="atividades.php">
+                    <i class="fas fa-gamepad"></i>Atividades
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('equipes')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="equipes.php">
+                    <i class="fas fa-users"></i>Equipes
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('funcionarios')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="funcionarios.php">
+                    <i class="fas fa-user-tie"></i>Funcionários
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('relatorios')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="relatorios.php">
+                    <i class="fas fa-chart-bar"></i>Relatórios
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('logs')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="logs.php">
+                    <i class="fas fa-history"></i>Logs do Sistema
+                </a>
+            </li>
+            <?php endif; ?>
+        </ul>
     </nav>
-
     <!-- Main Content -->
     <main class="main-content">
         <!-- Header -->
@@ -444,7 +547,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
     <!-- Biblioteca para exportação Excel (opcional) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-    <script src="assets/js/relatorios-export.js"></script>
+    <script src="../assets/js/relatorios-export.js"></script>
     <script>
         // Auto refresh relatórios every 5 minutes
         setTimeout(function() {

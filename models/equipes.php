@@ -3,8 +3,8 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-require_once 'includes/auth.php';
-require_once 'controllers/EquipesController.php';
+require_once '../includes/auth.php';
+require_once '../controllers/EquipesController.php';
 
 requireLogin();
 
@@ -117,44 +117,76 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Equipes - MagicKids</title>
+    <title>Equipes - MagicKids Eventos</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/equipes.css">
+    <link rel="stylesheet" href="../assets/css/equipes.css">
 </head>
 <body>
-    <div class="sidebar">
+    <!-- Floating Shapes -->
+    <div class="floating-shapes">
+        <i class="fas fa-birthday-cake fa-6x shape"></i>
+        <i class="fas fa-child fa-5x shape"></i>
+        <i class="fas fa-heart fa-4x shape"></i>
+    </div>
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
         <div>
             <div class="company-info">
-                <i class="fas fa-hat-wizard"></i>
-                <div class="fw-bold">MagicKids</div>
-                <p class="mb-0">Centro de Eventos</p>
+                <i class="fas fa-magic"></i>
+                <div class="fw-bold">MagicKids Eventos</div>
+                <p class="mb-0">Sistema de gestão</p>
             </div>
+            
             <nav class="nav flex-column">
-                <a class="nav-link" href="dashboard_eventos.php"><i class="fas fa-chart-line me-2"></i>Dashboard</a>
-                <a class="nav-link" href="eventos.php"><i class="fas fa-calendar-check me-2"></i>Eventos</a>
-                <a class="nav-link" href="cadastro_crianca.php"><i class="fas fa-clipboard-list me-2"></i>Cadastrar crianca</a>
-                <a class="nav-link" href="criancas.php"><i class="fas fa-children me-2"></i>Criancas</a>
-                <a class="nav-link" href="checkin.php"><i class="fas fa-clipboard-check me-2"></i>Check-in</a>
-                <a class="nav-link" href="funcionarios.php"><i class="fas fa-people-group me-2"></i>Funcionarios</a>
-                <a class="nav-link" href="atividades.php"><i class="fas fa-list-check me-2"></i>Atividades</a>
-                <a class="nav-link active" href="equipes.php"><i class="fas fa-people-arrows me-2"></i>Equipes</a>
-                <a class="nav-link" href="relatorios.php"><i class="fas fa-chart-pie me-2"></i>Relatorios</a>
-                <a class="nav-link" href="logs.php"><i class="fas fa-clipboard-list me-2"></i>Logs</a>
-                
+                <a class="nav-link" href="dashboard_eventos.php">
+                    <i class="fas fa-tachometer-alt"></i>Dashboard
+                </a>
+                <a class="nav-link" href="eventos.php">
+                    <i class="fas fa-calendar-alt"></i>Eventos
+                </a>
+                <a class="nav-link" href="criancas.php">
+                    <i class="fas fa-child"></i>Crianças
+                </a>
+                <a class="nav-link" href="cadastro_crianca.php">
+                    <i class="fas fa-user-plus"></i>Cadastrar Criança
+                </a>
+                <a class="nav-link" href="checkin.php">
+                    <i class="fas fa-clipboard-check"></i>Check-in/Check-out
+                </a>
+                <a class="nav-link" href="atividades.php">
+                    <i class="fas fa-gamepad"></i>Atividades
+                </a>
+                <a class="nav-link active" href="equipes.php">
+                    <i class="fas fa-users"></i>Equipes
+                </a>
+                <a class="nav-link" href="funcionarios.php">
+                    <i class="fas fa-user-tie"></i>Funcionários
+                </a>
+                <a class="nav-link" href="relatorios.php">
+                    <i class="fas fa-chart-bar"></i>Relatórios
+                </a>
+                <a class="nav-link" href="logs.php">
+                    <i class="fas fa-history"></i>Logs do Sistema
+                </a>
             </nav>
         </div>
-        <div class="p-3 border-top border-white-25 text-white-75">
+        
+        <div class="p-3 border-top text-white-75">
             <div class="fw-semibold">Logado como</div>
             <div><?php echo htmlspecialchars($currentUserName, ENT_QUOTES, 'UTF-8'); ?></div>
             <div class="small">Perfil: <?php echo htmlspecialchars($currentUserPerfil, ENT_QUOTES, 'UTF-8'); ?></div>
         </div>
-    </div>
+    </nav>
+
+    <!-- Main Content -->
     <main class="main-content">
+        <!-- Header -->
         <div class="header-bar">
             <div>
                 <h1 class="h3 mb-1">Equipes</h1>
-                <p class="text-muted mb-0">Monte times e acompanhe distribuicao de talentos.</p>
+                <p class="text-muted mb-0"><i class="fas fa-users me-2"></i>Monte times e acompanhe distribuição de talentos.</p>
             </div>
             <?php if ($canManageEquipes): ?>
             <div class="d-flex gap-2 flex-wrap">
@@ -172,6 +204,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
         </div>
         <?php endif; ?>
 
+        <!-- Statistics Cards -->
         <div class="row g-3 mb-4">
             <div class="col-md-4">
                 <div class="stat-card">
@@ -196,6 +229,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
             </div>
         </div>
 
+        <!-- Search and Filters -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body">
                 <form class="row g-3 align-items-end" method="get" action="equipes.php">
@@ -221,10 +255,21 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                 </form>
             </div>
         </div>
+
+        <!-- Teams Grid -->
         <div class="row g-4">
             <?php if (empty($equipes)): ?>
             <div class="col-12">
-                <div class="text-center text-muted py-5 border border-dashed rounded-4">Nenhuma equipe encontrada.</div>
+                <div class="text-center text-muted py-5 border border-dashed rounded-4">
+                    <i class="fas fa-users fa-4x mb-3"></i>
+                    <h4>Nenhuma equipe encontrada</h4>
+                    <p>Não há equipes cadastradas com os filtros aplicados.</p>
+                    <?php if ($canManageEquipes): ?>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createEquipeModal">
+                        <i class="fas fa-plus me-2"></i>Criar primeira equipe
+                    </button>
+                    <?php endif; ?>
+                </div>
             </div>
             <?php else: ?>
             <?php foreach ($equipes as $equipe): ?>
@@ -284,7 +329,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                             </button>
                         </div>
                         <?php else: ?>
-                        <span class="text-muted small">Visualizacao</span>
+                        <span class="text-muted small">Visualização</span>
                         <?php endif; ?>
                         <?php if ($canRemoverEquipe): ?>
                         <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteEquipeModal"
@@ -300,6 +345,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
             <?php endif; ?>
         </div>
 
+        <!-- Pagination -->
         <?php if ($totalPages > 1): ?>
         <div class="d-flex justify-content-end mt-4">
             <nav>
@@ -314,7 +360,10 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
         </div>
         <?php endif; ?>
     </main>
+
+    <!-- Modals -->
     <?php if ($canManageEquipes): ?>
+    <!-- Create Team Modal -->
     <div class="modal fade" id="createEquipeModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <form class="modal-content" method="post">
@@ -338,7 +387,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                             <input type="number" class="form-control" id="createCapacidade" name="capacidade_eventos" min="1" value="1">
                         </div>
                         <div class="col-md-12">
-                            <label for="createDescricao" class="form-label">Descricao</label>
+                            <label for="createDescricao" class="form-label">Descrição</label>
                             <textarea class="form-control" id="createDescricao" name="descricao" rows="3" placeholder="Resumo das atividades da equipe"></textarea>
                         </div>
                     </div>
@@ -351,6 +400,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
         </div>
     </div>
 
+    <!-- Edit Team Modal -->
     <div class="modal fade" id="editEquipeModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <form class="modal-content" method="post">
@@ -375,19 +425,20 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                             <input type="number" class="form-control" id="editCapacidade" name="capacidade_eventos" min="1" value="1">
                         </div>
                         <div class="col-md-12">
-                            <label for="editDescricao" class="form-label">Descricao</label>
+                            <label for="editDescricao" class="form-label">Descrição</label>
                             <textarea class="form-control" id="editDescricao" name="descricao" rows="3"></textarea>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar alteracoes</button>
+                    <button type="submit" class="btn btn-primary">Salvar alterações</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Add Member Modal -->
     <div class="modal fade" id="addMembroModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <form class="modal-content" method="post">
@@ -398,9 +449,9 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-muted small mb-3">Selecione um usuario para associar a equipe <strong id="addEquipeNome"></strong>.</p>
+                    <p class="text-muted small mb-3">Selecione um usuário para associar à equipe <strong id="addEquipeNome"></strong>.</p>
                     <div class="mb-3">
-                        <label for="addUsuario" class="form-label">Usuario</label>
+                        <label for="addUsuario" class="form-label">Usuário</label>
                         <select class="form-select" id="addUsuario" name="usuario_id" required>
                             <option value="">Selecione</option>
                             <?php foreach ($usuarios as $usuario): ?>
@@ -417,6 +468,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
         </div>
     </div>
 
+    <!-- Remove Member Modal -->
     <div class="modal fade" id="removeMembroModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <form class="modal-content" method="post">
@@ -439,6 +491,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
     </div>
     <?php endif; ?>
 
+    <!-- Delete Team Modal -->
     <?php if ($canRemoverEquipe): ?>
     <div class="modal fade" id="deleteEquipeModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -450,7 +503,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="mb-0">Deseja remover a equipe <strong id="deleteEquipeNome"></strong>? Todos os vinculos serao apagados.</p>
+                    <p class="mb-0">Deseja remover a equipe <strong id="deleteEquipeNome"></strong>? Todos os vínculos serão apagados.</p>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -461,15 +514,18 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
     </div>
     <?php endif; ?>
 
+    <!-- Datalist for Specialties -->
     <datalist id="especialidadeList">
         <?php foreach ($especialidadesDisponiveis as $esp): ?>
         <option value="<?php echo htmlspecialchars($esp, ENT_QUOTES, 'UTF-8'); ?>"></option>
         <?php endforeach; ?>
     </datalist>
 
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Edit Modal Handler
             var editModal = document.getElementById('editEquipeModal');
             if (editModal) {
                 editModal.addEventListener('show.bs.modal', function (event) {
@@ -483,6 +539,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                 });
             }
 
+            // Add Member Modal Handler
             var addModal = document.getElementById('addMembroModal');
             if (addModal) {
                 addModal.addEventListener('show.bs.modal', function (event) {
@@ -495,6 +552,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                 });
             }
 
+            // Remove Member Modal Handler
             var removeModal = document.getElementById('removeMembroModal');
             if (removeModal) {
                 removeModal.addEventListener('show.bs.modal', function (event) {
@@ -507,6 +565,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                 });
             }
 
+            // Delete Modal Handler
             var deleteModal = document.getElementById('deleteEquipeModal');
             if (deleteModal) {
                 deleteModal.addEventListener('show.bs.modal', function (event) {
@@ -516,6 +575,40 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                     deleteModal.querySelector('#deleteEquipeNome').textContent = button.getAttribute('data-nome') || '';
                 });
             }
+
+            // Hover effects for team cards
+            document.querySelectorAll('.team-card').forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(-3px)';
+                });
+            });
+
+            // Animation for stat cards
+            document.querySelectorAll('.stat-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 150);
+                });
+            });
+
+            // Floating shapes hover effect
+            document.querySelectorAll('.shape').forEach((shape, index) => {
+                shape.addEventListener('mouseover', function() {
+                    this.style.opacity = '0.1';
+                    this.style.transform = 'scale(1.2)';
+                });
+                
+                shape.addEventListener('mouseout', function() {
+                    this.style.opacity = '0.03';
+                    this.style.transform = '';
+                });
+            });
         });
     </script>
 </body>

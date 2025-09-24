@@ -8,14 +8,90 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once 'includes/auth.php';
-require_once 'controllers/CriancasController.php';
+require_once '../includes/auth.php';
+require_once '../controllers/CriancasController.php';
 
 // Verificar se o usuário está logado
 requireLogin();
 
 $criancasController = new CriancasController();
 $currentUser = getCurrentUser();
+
+// Definir permissões por perfil (igual ao dashboard_eventos.php)
+$permissions = [
+    'administrador' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => true,
+        'funcionarios' => true,
+        'relatorios' => true,
+        'logs' => true,
+        'quick_actions' => ['cadastro_crianca', 'criar_evento', 'checkin', 'relatorios']
+    ],
+    'coordenador' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => true,
+        'funcionarios' => false,
+        'relatorios' => true,
+        'logs' => false,
+        'quick_actions' => ['cadastro_crianca', 'criar_evento', 'checkin', 'relatorios']
+    ],
+    'animador' => [
+        'dashboard' => true,
+        'eventos' => true, // visualizar apenas
+        'criancas' => true, // visualizar apenas
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false,
+        'quick_actions' => ['cadastro_crianca', 'checkin']
+    ],
+    'monitor' => [
+        'dashboard' => true,
+        'eventos' => true, // visualizar apenas
+        'criancas' => true, // visualizar apenas
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false,
+        'quick_actions' => ['cadastro_crianca', 'checkin']
+    ],
+    'auxiliar' => [
+        'dashboard' => true,
+        'eventos' => false,
+        'criancas' => true, // visualizar apenas
+        'cadastro_crianca' => false,
+        'checkin' => true,
+        'atividades' => false,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false,
+        'quick_actions' => ['checkin']
+    ]
+];
+
+$userPermissions = $permissions[$currentUser['perfil']] ?? $permissions['auxiliar'];
+
+function hasUserPermission($permission) {
+    global $userPermissions;
+    return isset($userPermissions[$permission]) && $userPermissions[$permission];
+}
 
 // Processar ações
 $message = '';
@@ -25,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'update':
-                if (hasPermission('coordenador') || hasPermission('administrador')) {
+                if (hasUserPermission('criancas')) {
                     $result = $criancasController->update($_POST['id'], $_POST);
                     if ($result) {
                         $message = 'Dados da criança atualizados com sucesso!';
@@ -41,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
                 
             case 'delete':
-                if (hasPermission('administrador')) {
+                if ($currentUser['perfil'] === 'administrador') {
                     $result = $criancasController->forceDelete($_POST['id']);
                     if ($result) {
                         $message = 'Criança removida com sucesso!';
@@ -57,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
                 
             case 'toggle_status':
-                if (hasPermission('coordenador') || hasPermission('administrador')) {
+                if (hasUserPermission('criancas')) {
                     $result = $criancasController->toggleStatus($_POST['id']);
                     if ($result) {
                         $message = 'Status da criança alterado com sucesso!';
@@ -99,69 +175,96 @@ $currentPage = $result['current_page'];
     <title>Gerenciamento de Crianças - MagicKids</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/criancas.css" >
+    <link rel="stylesheet" href="../assets/css/criancas.css">
 </head>
 <body>
-    <!-- Sidebar -->
+    <!-- Sidebar idêntica ao dashboard_eventos.php -->
     <nav class="sidebar">
-        <div class="company-info">
-            <i class="fas fa-magic"></i>
-            <div class="company-name">MagicKids Eventos</div>
-        </div>
-        
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link" href="dashboard_eventos.php">
-                    <i class="fas fa-tachometer-alt"></i>Dashboard
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="eventos.php">
-                    <i class="fas fa-calendar-alt"></i>Eventos
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link active" href="criancas.php">
-                    <i class="fas fa-child"></i>Crianças
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="cadastro_crianca.php">
-                    <i class="fas fa-user-plus"></i>Cadastrar Criança
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="checkin.php">
-                    <i class="fas fa-clipboard-check"></i>Check-in/Check-out
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="atividades.php">
-                    <i class="fas fa-gamepad"></i>Atividades
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="equipes.php">
-                    <i class="fas fa-users"></i>Equipes
-                </a>
-            </li>
-            <?php if (hasPermission('administrador')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="funcionarios.php">
-                    <i class="fas fa-user-tie"></i>Funcionários
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="relatorios.php">
-                    <i class="fas fa-chart-bar"></i>Relatórios
-                </a>
-            </li>
-            <?php endif; ?>
-            <li class="nav-item mt-auto">
+        <div>
+            <div class="company-info">
+                <i class="fas fa-magic"></i>
+                <div class="fw-bold">MagicKids Eventos</div>
+                <p class="mb-0">Sistema de gestão</p>
+            </div>
             
-                </a>
-            </li>
-        </ul>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="dashboard_eventos.php">
+                        <i class="fas fa-tachometer-alt"></i>Dashboard
+                    </a>
+                </li>
+                
+                <?php if (hasUserPermission('eventos')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="eventos.php">
+                        <i class="fas fa-calendar-alt"></i>Eventos
+                    </a>
+                </li>
+                <?php endif; ?>
+                
+                <li class="nav-item">
+                    <a class="nav-link active" href="criancas.php">
+                        <i class="fas fa-child"></i>Crianças
+                    </a>
+                </li>
+                
+                <?php if (hasUserPermission('cadastro_crianca')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="cadastro_crianca.php">
+                        <i class="fas fa-user-plus"></i>Cadastrar Criança
+                    </a>
+                </li>
+                <?php endif; ?>
+                
+                <?php if (hasUserPermission('checkin')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="checkin.php">
+                        <i class="fas fa-clipboard-check"></i>Check-in/Check-out
+                    </a>
+                </li>
+                <?php endif; ?>
+                
+                <?php if (hasUserPermission('atividades')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="atividades.php">
+                        <i class="fas fa-gamepad"></i>Atividades
+                    </a>
+                </li>
+                <?php endif; ?>
+                
+                <?php if (hasUserPermission('equipes')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="equipes.php">
+                        <i class="fas fa-users"></i>Equipes
+                    </a>
+                </li>
+                <?php endif; ?>
+                
+                <?php if (hasUserPermission('funcionarios')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="funcionarios.php">
+                        <i class="fas fa-user-tie"></i>Funcionários
+                    </a>
+                </li>
+                <?php endif; ?>
+                
+                <?php if (hasUserPermission('relatorios')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="relatorios.php">
+                        <i class="fas fa-chart-bar"></i>Relatórios
+                    </a>
+                </li>
+                <?php endif; ?>
+                
+                <?php if (hasUserPermission('logs')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="logs.php">
+                        <i class="fas fa-history"></i>Logs do Sistema
+                    </a>
+                </li>
+                <?php endif; ?>
+            </ul>
+        </div>
     </nav>
     
     <!-- Main Content -->
