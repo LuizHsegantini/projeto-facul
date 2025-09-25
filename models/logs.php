@@ -367,28 +367,6 @@ if (!function_exists('renderLogData')) {
                     Acesso: <?php echo ucfirst($currentUser['perfil']); ?>
                 </small>
             </div>
-            <div class="d-flex align-items-center">
-                <div class="me-3 text-end">
-                    <small class="text-muted d-block">Bem-vindo(a),</small>
-                    <strong class="d-block"><?php echo htmlspecialchars($currentUser['nome_completo']); ?></strong>
-                    <span class="badge bg-gradient" style="background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));">
-                        <?php echo ucfirst($currentUser['perfil']); ?>
-                    </span>
-                </div>
-                <div class="user-avatar">
-                    <?php echo strtoupper(substr($currentUser['nome_completo'], 0, 2)); ?>
-                </div>
-                <div class="dropdown ms-3">
-                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-cog"></i>
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="profile.php"><i class="fas fa-user me-2"></i>Perfil</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" id="logout-trigger"><i class="fas fa-sign-out-alt me-2"></i>Sair</a></li>
-                    </ul>
-                </div>
-            </div>
         </div>
 
         <!-- Statistics Cards -->
