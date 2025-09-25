@@ -157,8 +157,7 @@ $permissions = [
         'equipes' => true,
         'funcionarios' => true,
         'relatorios' => true,
-        'logs' => true,
-        'quick_actions' => ['cadastro_crianca', 'criar_evento', 'checkin', 'relatorios']
+        'logs' => true
     ],
     'coordenador' => [
         'dashboard' => true,
@@ -170,47 +169,43 @@ $permissions = [
         'equipes' => true,
         'funcionarios' => false,
         'relatorios' => true,
-        'logs' => false,
-        'quick_actions' => ['cadastro_crianca', 'criar_evento', 'checkin', 'relatorios']
+        'logs' => false
     ],
     'animador' => [
         'dashboard' => true,
-        'eventos' => true, // visualizar apenas
-        'criancas' => true, // visualizar apenas
+        'eventos' => true,
+        'criancas' => true,
         'cadastro_crianca' => true,
         'checkin' => true,
         'atividades' => true,
         'equipes' => false,
         'funcionarios' => false,
         'relatorios' => false,
-        'logs' => false,
-        'quick_actions' => ['cadastro_crianca', 'checkin']
+        'logs' => false
     ],
     'monitor' => [
         'dashboard' => true,
-        'eventos' => true, // visualizar apenas
-        'criancas' => true, // visualizar apenas
+        'eventos' => true,
+        'criancas' => true,
         'cadastro_crianca' => true,
         'checkin' => true,
         'atividades' => true,
         'equipes' => false,
         'funcionarios' => false,
         'relatorios' => false,
-        'logs' => false,
-        'quick_actions' => ['cadastro_crianca', 'checkin']
+        'logs' => false
     ],
     'auxiliar' => [
         'dashboard' => true,
         'eventos' => false,
-        'criancas' => true, // visualizar apenas
+        'criancas' => true,
         'cadastro_crianca' => false,
         'checkin' => true,
         'atividades' => false,
         'equipes' => false,
         'funcionarios' => false,
         'relatorios' => false,
-        'logs' => false,
-        'quick_actions' => ['checkin']
+        'logs' => false
     ]
 ];
 
@@ -226,7 +221,7 @@ function hasUserPermission($permission) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Funcionarios - MagicKids</title>
+    <title>Funcionários - MagicKids</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/funcionarios.css">
@@ -240,102 +235,94 @@ function hasUserPermission($permission) {
     </div>
 
     <!-- Sidebar padronizada igual ao dashboard_eventos.php -->
-<!-- Sidebar corrigida -->
-<nav class="sidebar">
-    <div class="company-info">
-        <i class="fas fa-magic"></i>
-        <div class="fw-bold">MagicKids Eventos</div>
-        <p class="mb-0">Sistema de gestão</p>
-    </div>
-    
-    <nav>
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link" href="dashboard_eventos.php">
-                    <i class="fas fa-tachometer-alt"></i>Dashboard
-                </a>
-            </li>
-            
-            <?php if (hasUserPermission('eventos')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="eventos.php">
-                    <i class="fas fa-calendar-alt"></i>Eventos
-                </a>
-            </li>
-            <?php endif; ?>
-            
-            <?php if (hasUserPermission('criancas')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="criancas.php">
-                    <i class="fas fa-child"></i>Crianças
-                </a>
-            </li>
-            <?php endif; ?>
-            
-            <?php if (hasUserPermission('cadastro_crianca')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="/Faculdade/cadastro_crianca.php">
-                    <i class="fas fa-user-plus"></i>Cadastrar Criança
-                </a>
-            </li>
-            <?php endif; ?>
-            
-            <?php if (hasUserPermission('checkin')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="checkin.php">
-                    <i class="fas fa-clipboard-check"></i>Check-in/Check-out
-                </a>
-            </li>
-            <?php endif; ?>
-            
-            <?php if (hasUserPermission('atividades')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="atividades.php">
-                    <i class="fas fa-gamepad"></i>Atividades
-                </a>
-            </li>
-            <?php endif; ?>
-            
-            <?php if (hasUserPermission('equipes')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="equipes.php">
-                    <i class="fas fa-users"></i>Equipes
-                </a>
-            </li>
-            <?php endif; ?>
-            
-            <?php if (hasUserPermission('funcionarios')): ?>
-            <li class="nav-item">
-                <a class="nav-link active" href="funcionarios.php">
-                    <i class="fas fa-user-tie"></i>Funcionários
-                </a>
-            </li>
-            <?php endif; ?>
-            
-            <?php if (hasUserPermission('relatorios')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="relatorios.php">
-                    <i class="fas fa-chart-bar"></i>Relatórios
-                </a>
-            </li>
-            <?php endif; ?>
-            
-            <?php if (hasUserPermission('logs')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="logs.php">
-                    <i class="fas fa-history"></i>Logs do Sistema
-                </a>
-            </li>
-            <?php endif; ?>
-        </ul>
-    </nav>
-    
-    <div class="sidebar-footer">
-        <div class="fw-semibold">Logado como</div>
-        <div><?php echo htmlspecialchars($currentUserName, ENT_QUOTES, 'UTF-8'); ?></div>
-        <div class="text-white-50"><?php echo htmlspecialchars($currentUserPerfil, ENT_QUOTES, 'UTF-8'); ?></div>
-    </div>
-</nav>
+    <nav class="sidebar">
+        <div>
+            <div class="company-info">
+                <i class="fas fa-magic"></i>
+                <div class="fw-bold">MagicKids Eventos</div>
+                <p class="mb-0">Sistema de gestão</p>
+            </div>
+        
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="dashboard_eventos.php">
+                        <i class="fas fa-tachometer-alt"></i>Dashboard
+                    </a>
+                </li>
+                
+                <?php if (hasUserPermission('eventos')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="eventos.php">
+                        <i class="fas fa-calendar-alt"></i>Eventos
+                    </a>
+                </li>
+                <?php endif; ?>
+                
+                <?php if (hasUserPermission('criancas')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="criancas.php">
+                        <i class="fas fa-child"></i>Crianças
+                    </a>
+                </li>
+                <?php endif; ?>
+                
+                <?php if (hasUserPermission('cadastro_crianca')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="cadastro_crianca.php">
+                        <i class="fas fa-user-plus"></i>Cadastrar Criança
+                    </a>
+                </li>
+                <?php endif; ?>
+                
+                <?php if (hasUserPermission('checkin')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="checkin.php">
+                        <i class="fas fa-clipboard-check"></i>Check-in/Check-out
+                    </a>
+                </li>
+                <?php endif; ?>
+                
+                <?php if (hasUserPermission('atividades')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="atividades.php">
+                        <i class="fas fa-gamepad"></i>Atividades
+                    </a>
+                </li>
+                <?php endif; ?>
+                
+                <?php if (hasUserPermission('equipes')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="equipes.php">
+                        <i class="fas fa-users"></i>Equipes
+                    </a>
+                </li>
+                <?php endif; ?>
+                
+                <?php if (hasUserPermission('funcionarios')): ?>
+                <li class="nav-item">
+                    <a class="nav-link active" href="funcionarios.php">
+                        <i class="fas fa-user-tie"></i>Funcionários
+                    </a>
+                </li>
+                <?php endif; ?>
+                
+                <?php if (hasUserPermission('relatorios')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="relatorios.php">
+                        <i class="fas fa-chart-bar"></i>Relatórios
+                    </a>
+                </li>
+                <?php endif; ?>
+                
+                <?php if (hasUserPermission('logs')): ?>
+                <li class="nav-item">
+                    <a class="nav-link" href="logs.php">
+                        <i class="fas fa-history"></i>Logs do Sistema
+                    </a>
+                </li>
+                <?php endif; ?>
+            </ul>
+        </div>
         
         <div class="sidebar-footer">
             <div class="fw-semibold">Logado como</div>
