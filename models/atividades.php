@@ -1,4 +1,4 @@
-﻿﻿<?php
+<?php
 // atividades.php - Gestao de atividades
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -94,11 +94,25 @@ $currentPage = $listData['current_page'];
 
 $eventos = $controller->getEventos();
 $responsaveis = $controller->getResponsaveis();
-$tiposAtividade = $controller->getTiposAtividade();
+// Remover a linha que busca tipos de atividade do controller
+// $tiposAtividade = $controller->getTiposAtividade();
 $resumo = $controller->getResumo();
 
 $currentUserName = $currentUser['nome_completo'] ?? ($currentUser['nome'] ?? '');
 $currentUserPerfil = $currentUser['perfil'] ?? '';
+
+// Definir tipos de atividade fixos
+$tiposAtividade = [
+    'Recreação',
+    'Alimentação',
+    'Oficina',
+    'Show',
+    'Brincadeira',
+    'Cuidados',
+    'Limpeza',
+    'Setup',
+    'Outro'
+];
 
 // Definir permissões por perfil (igual ao dashboard)
 $permissions = [
@@ -506,7 +520,14 @@ function hasUserPermission($permission) {
                         </div>
                         <div class="col-md-6">
                             <label for="tipo_atividade" class="form-label">Tipo de Atividade *</label>
-                            <input type="text" class="form-control" id="tipo_atividade" name="tipo_atividade" list="tipoAtividadeList" required>
+                            <select class="form-select" id="tipo_atividade" name="tipo_atividade" required>
+                                <option value="">Selecione o tipo</option>
+                                <?php foreach ($tiposAtividade as $tipo): ?>
+                                <option value="<?php echo htmlspecialchars($tipo, ENT_QUOTES, 'UTF-8'); ?>">
+                                    <?php echo htmlspecialchars($tipo, ENT_QUOTES, 'UTF-8'); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div class="col-12">
                             <label for="descricao" class="form-label">Descrição</label>
@@ -588,7 +609,14 @@ function hasUserPermission($permission) {
                         </div>
                         <div class="col-md-6">
                             <label for="editTipo" class="form-label">Tipo de Atividade *</label>
-                            <input type="text" class="form-control" id="editTipo" name="tipo_atividade" list="tipoAtividadeList" required>
+                            <select class="form-select" id="editTipo" name="tipo_atividade" required>
+                                <option value="">Selecione o tipo</option>
+                                <?php foreach ($tiposAtividade as $tipo): ?>
+                                <option value="<?php echo htmlspecialchars($tipo, ENT_QUOTES, 'UTF-8'); ?>">
+                                    <?php echo htmlspecialchars($tipo, ENT_QUOTES, 'UTF-8'); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div class="col-12">
                             <label for="editDescricao" class="form-label">Descrição</label>
@@ -711,15 +739,10 @@ function hasUserPermission($permission) {
 </div>
 <?php endif; ?>
 <?php endif; ?>
-    <datalist id="tipoAtividadeList">
-        <?php foreach ($tiposAtividade as $tipo): ?>
-        <option value="<?php echo htmlspecialchars($tipo, ENT_QUOTES, 'UTF-8'); ?>"></option>
-        <?php endforeach; ?>
-    </datalist>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Script JavaScript permanece igual
+        // Script JavaScript atualizado para lidar com o select no modal de edição
         document.addEventListener('DOMContentLoaded', function () {
             var editModal = document.getElementById('editAtividadeModal');
             if (editModal) {
