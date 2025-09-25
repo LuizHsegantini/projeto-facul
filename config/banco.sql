@@ -438,10 +438,19 @@ INSERT INTO `tarefas` (`id`, `titulo`, `tipo_atividade`, `descricao`, `material_
 
 /*Incluindo colunas para gravar usuários que incluiram e atualizaram registros*/
 ALTER TABLE tarefas 
-  ADD usr_inclusao VARCHAR(50) NOT NULL;
+ADD usr_inclusao VARCHAR(50) NOT NULL;
 
 ALTER TABLE tarefas 
-  ADD usr_atualizacao VARCHAR(50);
+ADD usr_atualizacao VARCHAR(50);
+  
+alter table tarefas 
+modify data_inicio DATETIME;
+
+alter table tarefas 
+modify data_fim_prevista DATETIME;
+
+alter table tarefas 
+modify data_fim_real DATETIME;
 
 
 -- Atualizar a tabela equipes para usar ENUM fixo para especialidades

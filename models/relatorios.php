@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // relatorios.php - Visao analitica do sistema
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
