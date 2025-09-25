@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // equipes.php - Gestao de equipes
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -15,6 +15,20 @@ $canRemoverEquipe = hasPermission('administrador');
 
 $message = '';
 $messageType = '';
+
+// Lista fixa de especialidades
+$especialidadesPredefinidas = [
+    'Animação',
+    'Recreação',
+    'Culinária',
+    'Segurança',
+    'Limpeza',
+    'Arte',
+    'Música',
+    'Teatro',
+    'Esportes',
+    'Multidisciplinar'
+];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -241,7 +255,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                         <label for="especialidade" class="form-label">Especialidade</label>
                         <select class="form-select" id="especialidade" name="especialidade">
                             <option value="">Todas</option>
-                            <?php foreach ($especialidadesDisponiveis as $esp): ?>
+                            <?php foreach ($especialidadesPredefinidas as $esp): ?>
                             <option value="<?php echo htmlspecialchars($esp, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $especialidade === $esp ? 'selected' : ''; ?>>
                                 <?php echo htmlspecialchars($esp, ENT_QUOTES, 'UTF-8'); ?>
                             </option>
@@ -380,7 +394,14 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                         </div>
                         <div class="col-md-6">
                             <label for="createEspecialidade" class="form-label">Especialidade</label>
-                            <input type="text" class="form-control" id="createEspecialidade" name="especialidade" list="especialidadeList" placeholder="Multidisciplinar">
+                            <select class="form-select" id="createEspecialidade" name="especialidade" required>
+                                <option value="">Selecione uma especialidade</option>
+                                <?php foreach ($especialidadesPredefinidas as $esp): ?>
+                                <option value="<?php echo htmlspecialchars($esp, ENT_QUOTES, 'UTF-8'); ?>" <?php echo $esp === 'Multidisciplinar' ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($esp, ENT_QUOTES, 'UTF-8'); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div class="col-md-4">
                             <label for="createCapacidade" class="form-label">Capacidade simultanea</label>
@@ -418,7 +439,14 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                         </div>
                         <div class="col-md-6">
                             <label for="editEspecialidade" class="form-label">Especialidade</label>
-                            <input type="text" class="form-control" id="editEspecialidade" name="especialidade" list="especialidadeList">
+                            <select class="form-select" id="editEspecialidade" name="especialidade" required>
+                                <option value="">Selecione uma especialidade</option>
+                                <?php foreach ($especialidadesPredefinidas as $esp): ?>
+                                <option value="<?php echo htmlspecialchars($esp, ENT_QUOTES, 'UTF-8'); ?>">
+                                    <?php echo htmlspecialchars($esp, ENT_QUOTES, 'UTF-8'); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div class="col-md-4">
                             <label for="editCapacidade" class="form-label">Capacidade simultanea</label>
@@ -514,13 +542,6 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
     </div>
     <?php endif; ?>
 
-    <!-- Datalist for Specialties -->
-    <datalist id="especialidadeList">
-        <?php foreach ($especialidadesDisponiveis as $esp): ?>
-        <option value="<?php echo htmlspecialchars($esp, ENT_QUOTES, 'UTF-8'); ?>"></option>
-        <?php endforeach; ?>
-    </datalist>
-
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -533,7 +554,19 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                     if (!button) { return; }
                     editModal.querySelector('#editEquipeId').value = button.getAttribute('data-id') || '';
                     editModal.querySelector('#editNome').value = button.getAttribute('data-nome') || '';
-                    editModal.querySelector('#editEspecialidade').value = button.getAttribute('data-especialidade') || '';
+                    
+                    // Selecionar a especialidade no dropdown
+                    var especialidadeSelect = editModal.querySelector('#editEspecialidade');
+                    var especialidadeValue = button.getAttribute('data-especialidade') || '';
+                    if (especialidadeSelect && especialidadeValue) {
+                        for (var i = 0; i < especialidadeSelect.options.length; i++) {
+                            if (especialidadeSelect.options[i].value === especialidadeValue) {
+                                especialidadeSelect.selectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                    
                     editModal.querySelector('#editCapacidade').value = button.getAttribute('data-capacidade') || 1;
                     editModal.querySelector('#editDescricao').value = button.getAttribute('data-descricao') || '';
                 });
