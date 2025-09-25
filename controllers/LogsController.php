@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // controllers/LogsController.php - Versão corrigida para MagicKids Eventos
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/LogService.php';

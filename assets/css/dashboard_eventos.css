@@ -92,10 +92,23 @@ body {
 
 .sidebar .nav-link:hover,
 .sidebar .nav-link.active {
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
+    background: rgba(255, 255, 255, 0.25) !important;
+    color: white !important;
     transform: translateX(6px);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-left: 3px solid white;
+}
+
+.sidebar .nav-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 70%;
+    background: white;
+    border-radius: 0 4px 4px 0;
 }
 
 .main-content {

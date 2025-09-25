@@ -260,7 +260,7 @@ if (isset($_GET['id'])) {
             
             <?php if (hasUserPermission('cadastro_crianca')): ?>
             <li class="nav-item">
-                <a class="nav-link" href="cadastro_crianca.php">
+                <a class="nav-link" href="/Faculdade/cadastro_crianca.php">
                     <i class="fas fa-user-plus"></i>Cadastrar Criança
                 </a>
             </li>

@@ -113,6 +113,26 @@ function hasUserPermission($permission) {
     global $userPermissions;
     return isset($userPermissions[$permission]) && $userPermissions[$permission];
 }
+
+// FUNÇÃO NOVA: Identificar a página atual para marcar o menu ativo
+function isActivePage($pageName) {
+    $currentFile = basename($_SERVER['PHP_SELF']);
+    
+    $pageMap = [
+        'dashboard' => 'dashboard_eventos.php',
+        'eventos' => 'eventos.php',
+        'criancas' => 'criancas.php',
+        'cadastro_crianca' => 'cadastro_crianca.php',
+        'checkin' => 'checkin.php',
+        'atividades' => 'atividades.php',
+        'equipes' => 'equipes.php',
+        'funcionarios' => 'funcionarios.php',
+        'relatorios' => 'relatorios.php',
+        'logs' => 'logs.php'
+    ];
+    
+    return isset($pageMap[$pageName]) && $pageMap[$pageName] === $currentFile;
+}
 ?>
 
 <!DOCTYPE html>
@@ -135,94 +155,95 @@ function hasUserPermission($permission) {
     </div>
 
     <!-- Sidebar -->
-    <nav class="sidebar">
-        <div>
-            <div class="company-info">
-                <i class="fas fa-magic"></i>
-                <div class="fw-bold">MagicKids Eventos</div>
-                <p class="mb-0">Sistema de gestão</p>
-            </div>
+    <!-- Sidebar -->
+<nav class="sidebar">
+    <div>
+        <div class="company-info">
+            <i class="fas fa-magic"></i>
+            <div class="fw-bold">MagicKids Eventos</div>
+            <p class="mb-0">Sistema de gestão</p>
+        </div>
+    
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <a class="nav-link <?php echo isActivePage('dashboard') ? 'active' : ''; ?>" href="dashboard_eventos.php">
+                <i class="fas fa-tachometer-alt"></i>Dashboard
+            </a>
+        </li>
         
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link active" href="dashboard_eventos.php">
-                    <i class="fas fa-tachometer-alt"></i>Dashboard
-                </a>
-            </li>
-            
-            <?php if (hasUserPermission('eventos')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="eventos.php">
-                    <i class="fas fa-calendar-alt"></i>Eventos
-                </a>
-            </li>
-            <?php endif; ?>
-            
-            <?php if (hasUserPermission('criancas')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="criancas.php">
-                    <i class="fas fa-child"></i>Crianças
-                </a>
-            </li>
-            <?php endif; ?>
-            
-            <?php if (hasUserPermission('cadastro_crianca')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="/Faculdade/cadastro_crianca.php">
-                    <i class="fas fa-user-plus"></i>Cadastrar Criança
-                </a>
-            </li>
-            <?php endif; ?>
-            
-            <?php if (hasUserPermission('checkin')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="checkin.php">
-                    <i class="fas fa-clipboard-check"></i>Check-in/Check-out
-                </a>
-            </li>
-            <?php endif; ?>
-            
-            <?php if (hasUserPermission('atividades')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="atividades.php">
-                    <i class="fas fa-gamepad"></i>Atividades
-                </a>
-            </li>
-            <?php endif; ?>
-            
-            <?php if (hasUserPermission('equipes')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="equipes.php">
-                    <i class="fas fa-users"></i>Equipes
-                </a>
-            </li>
-            <?php endif; ?>
-            
-            <?php if (hasUserPermission('funcionarios')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="funcionarios.php">
-                    <i class="fas fa-user-tie"></i>Funcionários
-                </a>
-            </li>
-            <?php endif; ?>
-            
-            <?php if (hasUserPermission('relatorios')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="relatorios.php">
-                    <i class="fas fa-chart-bar"></i>Relatórios
-                </a>
-            </li>
-            <?php endif; ?>
-            
-            <?php if (hasUserPermission('logs')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="logs.php">
-                    <i class="fas fa-history"></i>Logs do Sistema
-                </a>
-            </li>
-            <?php endif; ?>
-        </ul>
-    </nav>
+        <?php if (hasUserPermission('eventos')): ?>
+        <li class="nav-item">
+            <a class="nav-link <?php echo isActivePage('eventos') ? 'active' : ''; ?>" href="eventos.php">
+                <i class="fas fa-calendar-alt"></i>Eventos
+            </a>
+        </li>
+        <?php endif; ?>
+        
+        <?php if (hasUserPermission('criancas')): ?>
+        <li class="nav-item">
+            <a class="nav-link <?php echo isActivePage('criancas') ? 'active' : ''; ?>" href="criancas.php">
+                <i class="fas fa-child"></i>Crianças
+            </a>
+        </li>
+        <?php endif; ?>
+        
+        <?php if (hasUserPermission('cadastro_crianca')): ?>
+        <li class="nav-item">
+            <a class="nav-link <?php echo isActivePage('cadastro_crianca') ? 'active' : ''; ?>" href="/Faculdade/cadastro_crianca.php">
+                <i class="fas fa-user-plus"></i>Cadastrar Criança
+            </a>
+        </li>
+        <?php endif; ?>
+        
+        <?php if (hasUserPermission('checkin')): ?>
+        <li class="nav-item">
+            <a class="nav-link <?php echo isActivePage('checkin') ? 'active' : ''; ?>" href="checkin.php">
+                <i class="fas fa-clipboard-check"></i>Check-in/Check-out
+            </a>
+        </li>
+        <?php endif; ?>
+        
+        <?php if (hasUserPermission('atividades')): ?>
+        <li class="nav-item">
+            <a class="nav-link <?php echo isActivePage('atividades') ? 'active' : ''; ?>" href="atividades.php">
+                <i class="fas fa-gamepad"></i>Atividades
+            </a>
+        </li>
+        <?php endif; ?>
+        
+        <?php if (hasUserPermission('equipes')): ?>
+        <li class="nav-item">
+            <a class="nav-link <?php echo isActivePage('equipes') ? 'active' : ''; ?>" href="equipes.php">
+                <i class="fas fa-users"></i>Equipes
+            </a>
+        </li>
+        <?php endif; ?>
+        
+        <?php if (hasUserPermission('funcionarios')): ?>
+        <li class="nav-item">
+            <a class="nav-link <?php echo isActivePage('funcionarios') ? 'active' : ''; ?>" href="funcionarios.php">
+                <i class="fas fa-user-tie"></i>Funcionários
+            </a>
+        </li>
+        <?php endif; ?>
+        
+        <?php if (hasUserPermission('relatorios')): ?>
+        <li class="nav-item">
+            <a class="nav-link <?php echo isActivePage('relatorios') ? 'active' : ''; ?>" href="relatorios.php">
+                <i class="fas fa-chart-bar"></i>Relatórios
+            </a>
+        </li>
+        <?php endif; ?>
+        
+        <?php if (hasUserPermission('logs')): ?>
+        <li class="nav-item">
+            <a class="nav-link <?php echo isActivePage('logs') ? 'active' : ''; ?>" href="logs.php">
+                <i class="fas fa-history"></i>Logs do Sistema
+            </a>
+        </li>
+        <?php endif; ?>
+    </ul>
+</nav>
     
     <!-- Main Content -->
     <main class="main-content">

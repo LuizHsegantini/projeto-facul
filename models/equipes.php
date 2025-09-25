@@ -149,7 +149,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
                 <a class="nav-link" href="criancas.php">
                     <i class="fas fa-child"></i>Crianças
                 </a>
-                <a class="nav-link" href="cadastro_crianca.php">
+                <a class="nav-link" href="/Faculdade/cadastro_crianca.php">
                     <i class="fas fa-user-plus"></i>Cadastrar Criança
                 </a>
                 <a class="nav-link" href="checkin.php">

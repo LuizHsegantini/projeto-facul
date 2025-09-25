@@ -1,5 +1,5 @@
 <?php
-// profile.php - Perfil do usuário com dados dinâmicos
+// profile.php - Perfil do usuário com dados dinâmicos - CORRIGIDO
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -64,6 +64,82 @@ if (!$userProfile) {
     die('Erro: Perfil não encontrado.');
 }
 
+// Definir permissões por perfil (igual ao dashboard)
+$permissions = [
+    'administrador' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => true,
+        'funcionarios' => true,
+        'relatorios' => true,
+        'logs' => true,
+        'quick_actions' => ['cadastro_crianca', 'criar_evento', 'checkin', 'relatorios']
+    ],
+    'coordenador' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => true,
+        'funcionarios' => false,
+        'relatorios' => true,
+        'logs' => false,
+        'quick_actions' => ['cadastro_crianca', 'criar_evento', 'checkin', 'relatorios']
+    ],
+    'animador' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false,
+        'quick_actions' => ['cadastro_crianca', 'checkin']
+    ],
+    'monitor' => [
+        'dashboard' => true,
+        'eventos' => true,
+        'criancas' => true,
+        'cadastro_crianca' => true,
+        'checkin' => true,
+        'atividades' => true,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false,
+        'quick_actions' => ['cadastro_crianca', 'checkin']
+    ],
+    'auxiliar' => [
+        'dashboard' => true,
+        'eventos' => false,
+        'criancas' => true,
+        'cadastro_crianca' => false,
+        'checkin' => true,
+        'atividades' => false,
+        'equipes' => false,
+        'funcionarios' => false,
+        'relatorios' => false,
+        'logs' => false,
+        'quick_actions' => ['checkin']
+    ]
+];
+
+$userPermissions = $permissions[$currentUser['perfil']] ?? $permissions['auxiliar'];
+
+function hasUserPermission($permission) {
+    global $userPermissions;
+    return isset($userPermissions[$permission]) && $userPermissions[$permission];
+}
+
 // Função para gerar iniciais do avatar
 function getInitials($name) {
     $names = explode(' ', trim($name));
@@ -108,7 +184,8 @@ function getPerfilBadgeClass($perfil) {
     <title>Perfil - MagicKids Eventos</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/profile.css">
+    <link rel="stylesheet" href="../assets/css/dashboard_eventos.css">
+    <link rel="stylesheet" href="../assets/css/logout_modal.css">
 </head>
 <body>
     <!-- Floating Shapes -->
@@ -118,72 +195,95 @@ function getPerfilBadgeClass($perfil) {
         <i class="fas fa-heart fa-4x shape"></i>
     </div>
 
-    <!-- Sidebar -->
+    <!-- Sidebar igual ao dashboard -->
     <nav class="sidebar">
-        <div class="company-info">
-            <i class="fas fa-magic"></i>
-            <div class="company-name">MagicKids Eventos</div>
-        </div>
+        <div>
+            <div class="company-info">
+                <i class="fas fa-magic"></i>
+                <div class="fw-bold">MagicKids Eventos</div>
+                <p class="mb-0">Sistema de gestão</p>
+            </div>
         
         <ul class="nav flex-column">
             <li class="nav-item">
                 <a class="nav-link" href="dashboard_eventos.php">
-                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    <i class="fas fa-tachometer-alt"></i>Dashboard
                 </a>
             </li>
+            
+            <?php if (hasUserPermission('eventos')): ?>
             <li class="nav-item">
                 <a class="nav-link" href="eventos.php">
-                    <i class="fas fa-calendar-star me-2"></i>Eventos
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="criancas.php">
-                    <i class="fas fa-child me-2"></i>Crianças
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="cadastro_crianca.php">
-                    <i class="fas fa-user-plus me-2"></i>Cadastrar Criança
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="checkin.php">
-                    <i class="fas fa-clipboard-check me-2"></i>Check-in/Check-out
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="atividades.php">
-                    <i class="fas fa-gamepad me-2"></i>Atividades
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="equipes.php">
-                    <i class="fas fa-users me-2"></i>Equipes
-                </a>
-            </li>
-            <?php if (hasPermission('administrador')): ?>
-            <li class="nav-item">
-                <a class="nav-link" href="funcionarios.php">
-                    <i class="fas fa-user-tie me-2"></i>Funcionários
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="relatorios.php">
-                    <i class="fas fa-chart-bar me-2"></i>Relatórios
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="logs.php">
-                    <i class="fas fa-history me-2"></i>Logs do Sistema
+                    <i class="fas fa-calendar-alt"></i>Eventos
                 </a>
             </li>
             <?php endif; ?>
+            
+            <?php if (hasUserPermission('criancas')): ?>
             <li class="nav-item">
-                <a class="nav-link active" href="profile.php">
-                    <i class="fas fa-user me-2"></i>Perfil
+                <a class="nav-link" href="criancas.php">
+                    <i class="fas fa-child"></i>Crianças
                 </a>
             </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('cadastro_crianca')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="/Faculdade/cadastro_crianca.php">
+                    <i class="fas fa-user-plus"></i>Cadastrar Criança
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('checkin')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="checkin.php">
+                    <i class="fas fa-clipboard-check"></i>Check-in/Check-out
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('atividades')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="atividades.php">
+                    <i class="fas fa-gamepad"></i>Atividades
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('equipes')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="equipes.php">
+                    <i class="fas fa-users"></i>Equipes
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('funcionarios')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="funcionarios.php">
+                    <i class="fas fa-user-tie"></i>Funcionários
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('relatorios')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="relatorios.php">
+                    <i class="fas fa-chart-bar"></i>Relatórios
+                </a>
+            </li>
+            <?php endif; ?>
+            
+            <?php if (hasUserPermission('logs')): ?>
+            <li class="nav-item">
+                <a class="nav-link" href="logs.php">
+                    <i class="fas fa-history"></i>Logs do Sistema
+                </a>
+            </li>
+            <?php endif; ?>
         </ul>
+        </div>
     </nav>
 
     <!-- Main Content -->
@@ -191,13 +291,16 @@ function getPerfilBadgeClass($perfil) {
         <!-- Header -->
         <div class="header-bar d-flex justify-content-between align-items-center">
             <div>
-                <h2 class="mb-0">Meu Perfil</h2>
-                <p class="text-muted mb-0">Gerencie suas informações pessoais e configurações</p>
+                <h2 class="mb-1 welcome-text">Meu Perfil</h2>
+                <p class="text-muted mb-0"><i class="fas fa-user me-2"></i>Gerencie suas informações pessoais e configurações</p>
             </div>
             <div class="d-flex align-items-center">
-                <button type="button" class="btn btn-outline-secondary me-2" onclick="window.history.back()">
-                    <i class="fas fa-arrow-left me-2"></i>Voltar
+                <button type="button" class="btn btn-outline-secondary me-2" onclick="window.location.href='dashboard_eventos.php'">
+                    <i class="fas fa-arrow-left me-2"></i>Voltar ao Dashboard
                 </button>
+                <div class="user-avatar">
+                    <?php echo getInitials($currentUser['nome_completo']); ?>
+                </div>
             </div>
         </div>
 
@@ -213,19 +316,20 @@ function getPerfilBadgeClass($perfil) {
             <!-- Profile Overview -->
             <div class="col-lg-4 mb-4">
                 <div class="card">
-                    <div class="profile-header">
-                        <div class="user-avatar">
+                    <div class="card-body text-center">
+                        <div class="user-avatar mb-3 mx-auto" style="width: 120px; height: 120px; font-size: 2.5rem;">
                             <?php echo getInitials($userProfile['nome_completo']); ?>
                         </div>
                         <h3 class="mb-1"><?php echo htmlspecialchars($userProfile['nome_completo']); ?></h3>
-                        <p class="mb-0">
+                        <p class="mb-2">
                             <span class="badge <?php echo getPerfilBadgeClass($userProfile['perfil']); ?>">
                                 <?php echo formatPerfil($userProfile['perfil']); ?>
                             </span>
                         </p>
-                        <p class="mb-2 mt-2"><?php echo htmlspecialchars($userProfile['cargo'] ?? 'Cargo não informado'); ?></p>
-                        <small>Membro desde: <?php echo date('d/m/Y', strtotime($userProfile['data_criacao'])); ?></small>
+                        <p class="mb-2 mt-2 text-muted"><?php echo htmlspecialchars($userProfile['cargo'] ?? 'Cargo não informado'); ?></p>
+                        <small class="text-muted">Membro desde: <?php echo date('d/m/Y', strtotime($userProfile['data_criacao'])); ?></small>
                     </div>
+                    <hr>
                     <div class="card-body">
                         <h6 class="text-muted mb-3">Informações de Contato</h6>
                         <div class="mb-2">
@@ -258,19 +362,19 @@ function getPerfilBadgeClass($perfil) {
                         </h6>
                     </div>
                     <div class="card-body">
-                        <div class="stat-card">
+                        <div class="stat-card primary mb-3">
                             <div class="stat-number"><?php echo $userStats['total_logs']; ?></div>
                             <div class="stat-label">Logs de Atividade</div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card success mb-3">
                             <div class="stat-number"><?php echo $userStats['total_equipes']; ?></div>
                             <div class="stat-label">Equipes Participando</div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card info mb-3">
                             <div class="stat-number"><?php echo $userStats['total_atividades']; ?></div>
                             <div class="stat-label">Atividades Atribuídas</div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card warning mb-0">
                             <div class="stat-number"><?php echo $userStats['total_eventos_coordenados']; ?></div>
                             <div class="stat-label">Eventos Coordenados</div>
                         </div>
@@ -310,7 +414,7 @@ function getPerfilBadgeClass($perfil) {
                         <div class="tab-content" id="profileTabContent">
                             <!-- Profile Info Tab -->
                             <div class="tab-pane fade show active" id="profile-info" role="tabpanel">
-                                <form method="POST" id="profileForm">
+                                <form method="POST" id="profileForm" class="mt-4">
                                     <input type="hidden" name="action" value="update_profile">
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
@@ -349,8 +453,8 @@ function getPerfilBadgeClass($perfil) {
                                         </div>
                                     </div>
                                     <div class="d-flex justify-content-end gap-2">
-                                        <button type="button" class="btn btn-outline-secondary" onclick="window.location.reload()">
-                                            <i class="fas fa-times me-2"></i>Cancelar
+                                        <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='dashboard_eventos.php'">
+                                            <i class="fas fa-arrow-left me-2"></i>Voltar ao Dashboard
                                         </button>
                                         <button type="submit" class="btn btn-primary">
                                             <i class="fas fa-save me-2"></i>Salvar Alterações
@@ -361,7 +465,7 @@ function getPerfilBadgeClass($perfil) {
 
                             <!-- Security Tab -->
                             <div class="tab-pane fade" id="security-info" role="tabpanel">
-                                <form method="POST" id="passwordForm">
+                                <form method="POST" id="passwordForm" class="mt-4">
                                     <input type="hidden" name="action" value="change_password">
                                     <div class="alert alert-info">
                                         <i class="fas fa-info-circle me-2"></i>
@@ -391,7 +495,7 @@ function getPerfilBadgeClass($perfil) {
                                     </div>
                                     <div class="d-flex justify-content-end gap-2">
                                         <button type="button" class="btn btn-outline-secondary" onclick="this.form.reset()">
-                                            <i class="fas fa-times me-2"></i>Cancelar
+                                            <i class="fas fa-times me-2"></i>Limpar Campos
                                         </button>
                                         <button type="submit" class="btn btn-primary">
                                             <i class="fas fa-key me-2"></i>Alterar Senha
@@ -402,110 +506,122 @@ function getPerfilBadgeClass($perfil) {
 
                             <!-- Activity Tab -->
                             <div class="tab-pane fade" id="activity-info" role="tabpanel">
-                                <h6 class="mb-3">Minhas Atividades Atribuídas</h6>
-                                <?php if (empty($userActivities)): ?>
-                                    <p class="text-muted">Nenhuma atividade atribuída no momento.</p>
-                                <?php else: ?>
-                                    <?php foreach ($userActivities as $atividade): ?>
-                                    <div class="activity-item">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <h6 class="mb-1"><?php echo htmlspecialchars($atividade['titulo']); ?></h6>
-                                                <small class="text-muted"><?php echo htmlspecialchars($atividade['evento_nome'] ?? 'Evento não especificado'); ?></small>
+                                <div class="mt-4">
+                                    <h6 class="mb-3">Minhas Atividades Atribuídas</h6>
+                                    <?php if (empty($userActivities)): ?>
+                                        <p class="text-muted">Nenhuma atividade atribuída no momento.</p>
+                                    <?php else: ?>
+                                        <?php foreach ($userActivities as $atividade): ?>
+                                        <div class="card mb-3" style="border-left: 4px solid var(--primary-color);">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <h6 class="mb-1"><?php echo htmlspecialchars($atividade['titulo']); ?></h6>
+                                                        <small class="text-muted"><?php echo htmlspecialchars($atividade['evento_nome'] ?? 'Evento não especificado'); ?></small>
+                                                    </div>
+                                                    <span class="badge bg-<?php echo $atividade['status'] === 'concluida' ? 'success' : ($atividade['status'] === 'em_execucao' ? 'primary' : 'warning'); ?>">
+                                                        <?php echo ucfirst(str_replace('_', ' ', $atividade['status'])); ?>
+                                                    </span>
+                                                </div>
+                                                <?php if ($atividade['data_inicio'] || $atividade['data_fim_prevista']): ?>
+                                                <p class="mb-1 mt-2">
+                                                    <small>
+                                                        <?php if ($atividade['data_inicio']): ?>
+                                                            Início: <?php echo date('d/m/Y', strtotime($atividade['data_inicio'])); ?>
+                                                        <?php endif; ?>
+                                                        <?php if ($atividade['data_fim_prevista']): ?>
+                                                            | Prazo: <?php echo date('d/m/Y', strtotime($atividade['data_fim_prevista'])); ?>
+                                                        <?php endif; ?>
+                                                    </small>
+                                                </p>
+                                                <?php endif; ?>
                                             </div>
-                                            <span class="badge bg-<?php echo $atividade['status'] === 'concluida' ? 'success' : ($atividade['status'] === 'em_execucao' ? 'primary' : 'warning'); ?>">
-                                                <?php echo ucfirst(str_replace('_', ' ', $atividade['status'])); ?>
-                                            </span>
                                         </div>
-                                        <?php if ($atividade['data_inicio'] || $atividade['data_fim_prevista']): ?>
-                                        <p class="mb-1 mt-2">
-                                            <small>
-                                                <?php if ($atividade['data_inicio']): ?>
-                                                    Início: <?php echo date('d/m/Y', strtotime($atividade['data_inicio'])); ?>
-                                                <?php endif; ?>
-                                                <?php if ($atividade['data_fim_prevista']): ?>
-                                                    | Prazo: <?php echo date('d/m/Y', strtotime($atividade['data_fim_prevista'])); ?>
-                                                <?php endif; ?>
-                                            </small>
-                                        </p>
-                                        <?php endif; ?>
-                                    </div>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
 
-                                <hr class="my-4">
+                                    <hr class="my-4">
 
-                                <h6 class="mb-3">Logs Recentes</h6>
-                                <?php if (empty($recentLogs)): ?>
-                                    <p class="text-muted">Nenhuma atividade recente encontrada.</p>
-                                <?php else: ?>
-                                    <?php foreach ($recentLogs as $log): ?>
-                                    <div class="recent-log">
-                                        <div class="d-flex justify-content-between">
-                                            <small><strong><?php echo htmlspecialchars($log['acao']); ?></strong></small>
-                                            <small class="text-muted"><?php echo date('d/m/Y H:i', strtotime($log['data_criacao'])); ?></small>
+                                    <h6 class="mb-3">Logs Recentes</h6>
+                                    <?php if (empty($recentLogs)): ?>
+                                        <p class="text-muted">Nenhuma atividade recente encontrada.</p>
+                                    <?php else: ?>
+                                        <?php foreach ($recentLogs as $log): ?>
+                                        <div class="card mb-2" style="border-left: 3px solid var(--info-color);">
+                                            <div class="card-body py-2">
+                                                <div class="d-flex justify-content-between">
+                                                    <small><strong><?php echo htmlspecialchars($log['acao']); ?></strong></small>
+                                                    <small class="text-muted"><?php echo date('d/m/Y H:i', strtotime($log['data_criacao'])); ?></small>
+                                                </div>
+                                                <?php if ($log['tabela_afetada']): ?>
+                                                <small class="text-muted">Tabela: <?php echo htmlspecialchars($log['tabela_afetada']); ?></small>
+                                                <?php endif; ?>
+                                            </div>
                                         </div>
-                                        <?php if ($log['tabela_afetada']): ?>
-                                        <small class="text-muted">Tabela: <?php echo htmlspecialchars($log['tabela_afetada']); ?></small>
-                                        <?php endif; ?>
-                                    </div>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
 
-                                <div class="text-center mt-3">
-                                    <a href="logs.php?user=<?php echo $userId; ?>" class="btn btn-outline-primary btn-sm">
-                                        Ver Todos os Logs
-                                    </a>
+                                    <?php if (hasUserPermission('logs')): ?>
+                                    <div class="text-center mt-3">
+                                        <a href="logs.php?user=<?php echo $userId; ?>" class="btn btn-outline-primary btn-sm">
+                                            Ver Todos os Logs
+                                        </a>
+                                    </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
 
                             <!-- Teams Tab -->
                             <div class="tab-pane fade" id="teams-info" role="tabpanel">
-                                <h6 class="mb-3">Equipes que Participo</h6>
-                                
-                                <?php if (empty($userTeams)): ?>
-                                    <p class="text-muted">Você não participa de nenhuma equipe no momento.</p>
-                                <?php else: ?>
-                                <div class="row">
-                                    <?php foreach ($userTeams as $equipe): ?>
-                                    <div class="col-md-6 mb-3">
-                                        <div class="card border-primary">
-                                            <div class="card-body">
-                                                <h6 class="card-title text-primary">
-                                                    <i class="fas fa-<?php 
-                                                        $icons = [
-                                                            'Animação' => 'gamepad',
-                                                            'Recreação' => 'running',
-                                                            'Culinária' => 'utensils',
-                                                            'Segurança' => 'shield-alt',
-                                                            'Limpeza' => 'broom',
-                                                            'Arte' => 'palette',
-                                                            'Música' => 'music',
-                                                            'Teatro' => 'theater-masks',
-                                                            'Esportes' => 'basketball-ball',
-                                                            'Multidisciplinar' => 'users'
-                                                        ];
-                                                        echo $icons[$equipe['especialidade']] ?? 'users';
-                                                    ?> me-2"></i>
-                                                    <?php echo htmlspecialchars($equipe['nome']); ?>
-                                                </h6>
-                                                <p class="card-text">
-                                                    <small class="text-muted">Especialidade: <?php echo htmlspecialchars($equipe['especialidade']); ?></small>
-                                                </p>
-                                                <div class="team-badge">
-                                                    Membro desde: <?php echo date('d/m/Y', strtotime($equipe['data_entrada'])); ?>
+                                <div class="mt-4">
+                                    <h6 class="mb-3">Equipes que Participo</h6>
+                                    
+                                    <?php if (empty($userTeams)): ?>
+                                        <p class="text-muted">Você não participa de nenhuma equipe no momento.</p>
+                                    <?php else: ?>
+                                    <div class="row">
+                                        <?php foreach ($userTeams as $equipe): ?>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card border-primary">
+                                                <div class="card-body">
+                                                    <h6 class="card-title text-primary">
+                                                        <i class="fas fa-<?php 
+                                                            $icons = [
+                                                                'Animação' => 'gamepad',
+                                                                'Recreação' => 'running',
+                                                                'Culinária' => 'utensils',
+                                                                'Segurança' => 'shield-alt',
+                                                                'Limpeza' => 'broom',
+                                                                'Arte' => 'palette',
+                                                                'Música' => 'music',
+                                                                'Teatro' => 'theater-masks',
+                                                                'Esportes' => 'basketball-ball',
+                                                                'Multidisciplinar' => 'users'
+                                                            ];
+                                                            echo $icons[$equipe['especialidade']] ?? 'users';
+                                                        ?> me-2"></i>
+                                                        <?php echo htmlspecialchars($equipe['nome']); ?>
+                                                    </h6>
+                                                    <p class="card-text">
+                                                        <small class="text-muted">Especialidade: <?php echo htmlspecialchars($equipe['especialidade']); ?></small>
+                                                    </p>
+                                                    <span class="badge" style="background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: white;">
+                                                        Membro desde: <?php echo date('d/m/Y', strtotime($equipe['data_entrada'])); ?>
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
+                                        <?php endforeach; ?>
                                     </div>
-                                    <?php endforeach; ?>
-                                </div>
-                                <?php endif; ?>
+                                    <?php endif; ?>
 
-                                <div class="text-center mt-3">
-                                    <a href="equipes.php" class="btn btn-outline-primary">
-                                        <i class="fas fa-users me-2"></i>Ver Todas as Equipes
-                                    </a>
+                                    <?php if (hasUserPermission('equipes')): ?>
+                                    <div class="text-center mt-3">
+                                        <a href="equipes.php" class="btn btn-outline-primary">
+                                            <i class="fas fa-users me-2"></i>Ver Todas as Equipes
+                                        </a>
+                                    </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -515,129 +631,228 @@ function getPerfilBadgeClass($perfil) {
         </div>
     </main>
 
+    <!-- Modal de Logout (usando o mesmo do dashboard) -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content logout-modal">
+                <div class="modal-header border-0 text-center">
+                    <div class="w-100">
+                        <div class="logout-icon-modal">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </div>
+                        <h4 class="modal-title mt-3" id="logoutModalLabel">Confirmar Logout</h4>
+                    </div>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="text-muted mb-4">
+                        Olá, <strong><?php echo htmlspecialchars($currentUser['nome_completo']); ?></strong>!<br>
+                        Tem certeza que deseja sair do sistema?
+                    </p>
+                    <div class="d-flex gap-3 justify-content-center">
+                        <button type="button" class="btn btn-logout-confirm" id="confirm-logout-btn">
+                            <i class="fas fa-sign-out-alt me-2"></i>Sim, Sair
+                        </button>
+                        <button type="button" class="btn btn-cancel-logout" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/logout.js"></script>
     <script>
-        // Form validation and submission
-        document.getElementById('profileForm').addEventListener('submit', function(e) {
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Salvando...';
-            submitBtn.disabled = true;
+        // Prevenir reset automático dos formulários
+        document.addEventListener('DOMContentLoaded', function() {
+            // Salvar valores originais
+            const profileForm = document.getElementById('profileForm');
+            const passwordForm = document.getElementById('passwordForm');
             
-            // Allow form to submit normally - PHP will handle the processing
-        });
-
-        document.getElementById('passwordForm').addEventListener('submit', function(e) {
-            const newPassword = document.getElementById('new_password').value;
-            const confirmPassword = document.getElementById('confirm_password').value;
-            
-            if (newPassword !== confirmPassword) {
-                e.preventDefault();
-                alert('As senhas não coincidem!');
-                return false;
+            // Desabilitar autocomplete para evitar reset automático
+            if (profileForm) {
+                profileForm.setAttribute('autocomplete', 'off');
+                
+                // Prevenir reset do formulário
+                profileForm.addEventListener('reset', function(e) {
+                    e.preventDefault();
+                    return false;
+                });
+                
+                // Garantir que dados sejam mantidos durante o envio
+                profileForm.addEventListener('submit', function(e) {
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Salvando...';
+                    submitBtn.disabled = true;
+                    
+                    // Não prevenir o envio - deixar o PHP processar
+                    return true;
+                });
             }
             
-            if (newPassword.length < 6) {
-                e.preventDefault();
-                alert('A senha deve ter pelo menos 6 caracteres!');
-                return false;
+            if (passwordForm) {
+                passwordForm.setAttribute('autocomplete', 'off');
+                
+                // Validação de senha em tempo real
+                const newPassword = document.getElementById('new_password');
+                const confirmPassword = document.getElementById('confirm_password');
+                
+                function validatePasswords() {
+                    if (newPassword.value && confirmPassword.value) {
+                        if (newPassword.value === confirmPassword.value) {
+                            confirmPassword.classList.remove('is-invalid');
+                            confirmPassword.classList.add('is-valid');
+                            return true;
+                        } else {
+                            confirmPassword.classList.remove('is-valid');
+                            confirmPassword.classList.add('is-invalid');
+                            return false;
+                        }
+                    }
+                    return false;
+                }
+                
+                if (confirmPassword) {
+                    confirmPassword.addEventListener('input', validatePasswords);
+                    newPassword.addEventListener('input', validatePasswords);
+                }
+                
+                passwordForm.addEventListener('submit', function(e) {
+                    const currentPassword = document.getElementById('current_password').value;
+                    const newPass = newPassword.value;
+                    const confirmPass = confirmPassword.value;
+                    
+                    if (!currentPassword) {
+                        e.preventDefault();
+                        alert('Por favor, informe sua senha atual');
+                        return false;
+                    }
+                    
+                    if (newPass !== confirmPass) {
+                        e.preventDefault();
+                        alert('As senhas não coincidem!');
+                        return false;
+                    }
+                    
+                    if (newPass.length < 6) {
+                        e.preventDefault();
+                        alert('A senha deve ter pelo menos 6 caracteres!');
+                        return false;
+                    }
+                    
+                    if (!confirm('Tem certeza que deseja alterar sua senha?')) {
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Alterando...';
+                    submitBtn.disabled = true;
+                    
+                    return true;
+                });
             }
-            
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Alterando...';
-            submitBtn.disabled = true;
-            
-            // Allow form to submit normally - PHP will handle the processing
         });
-
-        // Auto-generate avatar initials
-        function updateAvatarInitials() {
-            const nameField = document.getElementById('nome_completo');
-            const avatar = document.querySelector('.user-avatar');
+        
+        // Auto-dismiss alerts
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert-success');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    if (bsAlert) {
+                        bsAlert.close();
+                    }
+                }, 5000);
+            });
+        });
+        
+        // Avatar update em tempo real
+        document.getElementById('nome_completo').addEventListener('input', function() {
+            const name = this.value.trim();
+            const avatars = document.querySelectorAll('.user-avatar');
             
-            nameField.addEventListener('input', function() {
-                const name = this.value.trim();
-                if (name) {
-                    const initials = name.split(' ')
-                        .map(n => n.charAt(0))
-                        .join('')
-                        .substring(0, 2)
-                        .toUpperCase();
-                    avatar.textContent = initials;
+            if (name) {
+                const initials = name.split(' ')
+                    .map(n => n.charAt(0))
+                    .join('')
+                    .substring(0, 2)
+                    .toUpperCase();
+                
+                avatars.forEach(avatar => {
+                    if (!avatar.querySelector('img')) { // Se não tiver imagem
+                        avatar.textContent = initials;
+                    }
+                });
+            }
+        });
+        
+        // Validação de email em tempo real
+        document.getElementById('email').addEventListener('blur', function() {
+            const email = this.value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (email && !emailRegex.test(email)) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+            } else if (email) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            }
+        });
+        
+        // Validação de campo obrigatório
+        document.getElementById('cargo').addEventListener('blur', function() {
+            const cargo = this.value.trim();
+            
+            if (!cargo) {
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+            } else {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            }
+        });
+        
+        // Tab navigation com URL hash
+        document.addEventListener('DOMContentLoaded', function() {
+            const hash = window.location.hash;
+            if (hash && hash.startsWith('#')) {
+                const tabButton = document.querySelector(`button[data-bs-target="${hash}"]`);
+                if (tabButton) {
+                    const tab = new bootstrap.Tab(tabButton);
+                    tab.show();
+                }
+            }
+        });
+        
+        // Update URL hash quando trocar de tab
+        document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(button => {
+            button.addEventListener('shown.bs.tab', function(e) {
+                const targetHash = e.target.getAttribute('data-bs-target');
+                if (targetHash) {
+                    window.history.replaceState(null, null, targetHash);
                 }
             });
-        }
-
-        // Initialize avatar functionality
-        updateAvatarInitials();
-
-        // Add floating animation to stat cards
-        document.querySelectorAll('.stat-card').forEach((card, index) => {
-            card.addEventListener('mouseenter', function() {
-                this.style.animation = `float 2s ease-in-out infinite`;
-                this.style.animationDelay = `${index * 0.2}s`;
-            });
-            
-            card.addEventListener('mouseleave', function() {
-                this.style.animation = '';
-            });
-        });
-
-        // Real-time form validation
-        function validateForm() {
-            const email = document.getElementById('email').value;
-            const nome = document.getElementById('nome_completo').value;
-            const cargo = document.getElementById('cargo').value;
-            
-            let isValid = true;
-            
-            // Email validation
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                document.getElementById('email').classList.add('is-invalid');
-                isValid = false;
-            } else {
-                document.getElementById('email').classList.remove('is-invalid');
-                document.getElementById('email').classList.add('is-valid');
-            }
-            
-            // Name validation
-            if (nome.trim().length < 3) {
-                document.getElementById('nome_completo').classList.add('is-invalid');
-                isValid = false;
-            } else {
-                document.getElementById('nome_completo').classList.remove('is-invalid');
-                document.getElementById('nome_completo').classList.add('is-valid');
-            }
-            
-            // Cargo validation
-            if (cargo.trim().length === 0) {
-                document.getElementById('cargo').classList.add('is-invalid');
-                isValid = false;
-            } else {
-                document.getElementById('cargo').classList.remove('is-invalid');
-                document.getElementById('cargo').classList.add('is-valid');
-            }
-            
-            return isValid;
-        }
-        
-        // Add validation listeners
-        ['nome_completo', 'email', 'cargo'].forEach(fieldId => {
-            const field = document.getElementById(fieldId);
-            if (field) {
-                field.addEventListener('blur', validateForm);
-            }
         });
         
-        // Password strength indicator
+        // Indicador de força da senha
         document.getElementById('new_password').addEventListener('input', function() {
             const password = this.value;
-            const strengthIndicator = document.getElementById('password-strength') || createPasswordStrengthIndicator();
+            let strengthText = document.getElementById('password-strength');
+            
+            if (!strengthText) {
+                strengthText = document.createElement('div');
+                strengthText.id = 'password-strength';
+                strengthText.className = 'small mt-1';
+                this.parentNode.appendChild(strengthText);
+            }
             
             let strength = 0;
-            let strengthText = '';
+            let strengthLabel = '';
             let strengthClass = '';
             
             if (password.length >= 6) strength += 1;
@@ -649,109 +864,39 @@ function getPerfilBadgeClass($perfil) {
             switch(strength) {
                 case 0:
                 case 1:
-                    strengthText = 'Muito fraca';
+                    strengthLabel = 'Muito fraca';
                     strengthClass = 'text-danger';
                     break;
                 case 2:
-                    strengthText = 'Fraca';
+                    strengthLabel = 'Fraca';
                     strengthClass = 'text-warning';
                     break;
                 case 3:
-                    strengthText = 'Média';
+                    strengthLabel = 'Média';
                     strengthClass = 'text-info';
                     break;
                 case 4:
-                    strengthText = 'Forte';
+                    strengthLabel = 'Forte';
                     strengthClass = 'text-success';
                     break;
                 case 5:
-                    strengthText = 'Muito forte';
+                    strengthLabel = 'Muito forte';
                     strengthClass = 'text-success fw-bold';
                     break;
             }
             
-            strengthIndicator.textContent = `Força da senha: ${strengthText}`;
-            strengthIndicator.className = `small ${strengthClass}`;
+            strengthText.textContent = password ? `Força da senha: ${strengthLabel}` : '';
+            strengthText.className = `small mt-1 ${strengthClass}`;
         });
         
-        function createPasswordStrengthIndicator() {
-            const indicator = document.createElement('div');
-            indicator.id = 'password-strength';
-            indicator.className = 'small text-muted mt-1';
-            document.getElementById('new_password').parentNode.appendChild(indicator);
-            return indicator;
-        }
-        
-        // Tab switching with URL hash
-        document.addEventListener('DOMContentLoaded', function() {
-            const hash = window.location.hash;
-            if (hash) {
-                const tabButton = document.querySelector(`button[data-bs-target="${hash}"]`);
-                if (tabButton) {
-                    tabButton.click();
-                }
-            }
-        });
-        
-        // Update URL hash when tab changes
-        document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(button => {
-            button.addEventListener('shown.bs.tab', function(e) {
-                const targetHash = e.target.getAttribute('data-bs-target');
-                window.history.replaceState(null, null, targetHash);
+        // Hover effects nas stat cards
+        document.querySelectorAll('.stat-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
             });
-        });
-        
-        // Auto-dismiss alerts after 5 seconds
-        document.addEventListener('DOMContentLoaded', function() {
-            const alerts = document.querySelectorAll('.alert:not(.alert-info)');
-            alerts.forEach(alert => {
-                if (alert.classList.contains('alert-success')) {
-                    setTimeout(() => {
-                        const bsAlert = new bootstrap.Alert(alert);
-                        bsAlert.close();
-                    }, 5000);
-                }
-            });
-        });
-
-        // Confirmation dialogs for sensitive actions
-        document.addEventListener('DOMContentLoaded', function() {
-            const passwordForm = document.getElementById('passwordForm');
-            if (passwordForm) {
-                passwordForm.addEventListener('submit', function(e) {
-                    if (!confirm('Tem certeza que deseja alterar sua senha?')) {
-                        e.preventDefault();
-                        return false;
-                    }
-                });
-            }
-        });
-        
-        // Loading states for forms
-        function setLoadingState(form, isLoading) {
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const inputs = form.querySelectorAll('input:not([disabled])');
             
-            if (isLoading) {
-                submitBtn.disabled = true;
-                inputs.forEach(input => input.disabled = true);
-            } else {
-                submitBtn.disabled = false;
-                inputs.forEach(input => input.disabled = false);
-            }
-        }
-        
-        // Enhanced form submission handling
-        document.querySelectorAll('form').forEach(form => {
-            form.addEventListener('submit', function() {
-                setLoadingState(this, true);
-            });
-        });
-        
-        // Re-enable forms after page load (in case of validation errors)
-        window.addEventListener('load', function() {
-            document.querySelectorAll('form').forEach(form => {
-                setLoadingState(form, false);
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
             });
         });
     </script>

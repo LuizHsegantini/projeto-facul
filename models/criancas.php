@@ -368,13 +368,13 @@ $currentPage = $result['current_page'];
                             <a href="criancas.php" class="btn btn-outline-primary me-2">
                                 <i class="fas fa-times me-2"></i>Limpar Filtros
                             </a>
-                            <a href="cadastro_crianca.php" class="btn btn-primary">
+                            <a href="/Faculdade/cadastro_crianca.php" class="btn btn-primary">
                                 <i class="fas fa-plus me-2"></i>Cadastrar Criança
                             </a>
                         <?php else: ?>
                             <h5 class="text-muted">Nenhuma criança encontrada</h5>
                             <p class="text-muted">Faça o primeiro cadastro de criança</p>
-                            <a href="cadastro_crianca.php" class="btn btn-primary">
+                            <a href="/Faculdade/cadastro_crianca.php" class="btn btn-primary">
                                 <i class="fas fa-plus me-2"></i>Cadastrar Primeira Criança
                             </a>
                         <?php endif; ?>
