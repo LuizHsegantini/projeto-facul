@@ -200,8 +200,147 @@ class EventosController {
         }
     }
     
+    // MÉTODO: Verificar se evento já existe
+    private function eventoExiste($nome, $data_inicio, $local_evento, $evento_id = null) {
+        try {
+            $query = "SELECT COUNT(*) as total FROM eventos 
+                      WHERE nome = :nome 
+                      AND data_inicio = :data_inicio 
+                      AND local_evento = :local_evento";
+            
+            if ($evento_id) {
+                $query .= " AND id != :evento_id";
+            }
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':nome', $nome);
+            $stmt->bindParam(':data_inicio', $data_inicio);
+            $stmt->bindParam(':local_evento', $local_evento);
+            
+            if ($evento_id) {
+                $stmt->bindParam(':evento_id', $evento_id);
+            }
+            
+            $stmt->execute();
+            $result = $stmt->fetch();
+            
+            return $result['total'] > 0;
+            
+        } catch (Exception $e) {
+            error_log("Erro no EventosController::eventoExiste: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    // MÉTODO: Validar data (não permitir datas passadas)
+    private function validarData($data_inicio) {
+        try {
+            // Definir timezone para Brasil
+            date_default_timezone_set('America/Sao_Paulo');
+            
+            $dataEvento = new DateTime($data_inicio);
+            $dataAtual = new DateTime();
+            
+            // Verificar se a data do evento é anterior à data atual
+            if ($dataEvento < $dataAtual) {
+                return false;
+            }
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Erro no EventosController::validarData: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    // MÉTODO: Validar idade da criança para o evento
+    public function validarIdadeCrianca($crianca_id, $evento_id) {
+        try {
+            // Buscar idade da criança
+            $queryCrianca = "SELECT idade FROM criancas_cadastro WHERE id = :crianca_id AND ativo = 1";
+            $stmtCrianca = $this->conn->prepare($queryCrianca);
+            $stmtCrianca->bindParam(':crianca_id', $crianca_id);
+            $stmtCrianca->execute();
+            $crianca = $stmtCrianca->fetch();
+            
+            if (!$crianca) {
+                return false;
+            }
+            
+            // Buscar faixa etária do evento
+            $queryEvento = "SELECT faixa_etaria_min, faixa_etaria_max FROM eventos WHERE id = :evento_id";
+            $stmtEvento = $this->conn->prepare($queryEvento);
+            $stmtEvento->bindParam(':evento_id', $evento_id);
+            $stmtEvento->execute();
+            $evento = $stmtEvento->fetch();
+            
+            if (!$evento) {
+                return false;
+            }
+            
+            $idadeCrianca = $crianca['idade'];
+            $idadeMinima = $evento['faixa_etaria_min'];
+            $idadeMaxima = $evento['faixa_etaria_max'];
+            
+            // Verificar se a idade está dentro da faixa permitida
+            return ($idadeCrianca >= $idadeMinima && $idadeCrianca <= $idadeMaxima);
+            
+        } catch (Exception $e) {
+            error_log("Erro no EventosController::validarIdadeCrianca: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    // MÉTODO AUXILIAR: Obter nome do campo para mensagens de erro
+    private function getFieldName($field) {
+        $names = [
+            'nome' => 'Nome do Evento',
+            'tipo_evento' => 'Tipo de Evento',
+            'data_inicio' => 'Data de Início',
+            'coordenador_id' => 'Coordenador',
+            'faixa_etaria_min' => 'Idade Mínima',
+            'faixa_etaria_max' => 'Idade Máxima',
+            'capacidade_maxima' => 'Capacidade Máxima',
+            'local_evento' => 'Local do Evento'
+        ];
+        
+        return $names[$field] ?? $field;
+    }
+    
     public function create($data) {
         try {
+            // VALIDAÇÃO 1: Campos obrigatórios
+            $requiredFields = ['nome', 'tipo_evento', 'data_inicio', 'coordenador_id', 
+                              'faixa_etaria_min', 'faixa_etaria_max', 'capacidade_maxima', 'local_evento'];
+            
+            foreach ($requiredFields as $field) {
+                if (empty(trim($data[$field] ?? ''))) {
+                    throw new Exception("O campo " . $this->getFieldName($field) . " é obrigatório.");
+                }
+            }
+
+            // VALIDAÇÃO 2: Verificar se evento já existe
+            if ($this->eventoExiste($data['nome'], $data['data_inicio'], $data['local_evento'])) {
+                throw new Exception("Já existe um evento com o mesmo nome, data e local.");
+            }
+            
+            // VALIDAÇÃO 3: Verificar se a data não é passada
+            if (!$this->validarData($data['data_inicio'])) {
+                throw new Exception("Não é permitido criar eventos com datas passadas.");
+            }
+            
+            // VALIDAÇÃO 4: Verificar faixa etária
+            if ($data['faixa_etaria_min'] > $data['faixa_etaria_max']) {
+                throw new Exception("A idade mínima não pode ser maior que a idade máxima.");
+            }
+            
+            // Calcular data_fim automaticamente
+            $data_inicio = new DateTime($data['data_inicio']);
+            $duracao_horas = intval($data['duracao_horas']);
+            $data_fim = $data_inicio->add(new DateInterval('PT' . $duracao_horas . 'H'));
+            $data_fim_evento = $data_fim->format('Y-m-d H:i:s');
+            
             $query = "INSERT INTO eventos (nome, tipo_evento, descricao, data_inicio, data_fim_evento, 
                       faixa_etaria_min, faixa_etaria_max, capacidade_maxima, local_evento, 
                       duracao_horas, status, coordenador_id) 
@@ -214,7 +353,7 @@ class EventosController {
             $stmt->bindParam(':tipo_evento', $data['tipo_evento']);
             $stmt->bindParam(':descricao', $data['descricao']);
             $stmt->bindParam(':data_inicio', $data['data_inicio']);
-            $stmt->bindParam(':data_fim_evento', $data['data_fim_evento']);
+            $stmt->bindParam(':data_fim_evento', $data_fim_evento);
             $stmt->bindParam(':faixa_etaria_min', $data['faixa_etaria_min']);
             $stmt->bindParam(':faixa_etaria_max', $data['faixa_etaria_max']);
             $stmt->bindParam(':capacidade_maxima', $data['capacidade_maxima']);
@@ -233,14 +372,36 @@ class EventosController {
             
         } catch (Exception $e) {
             error_log("Erro no EventosController::create: " . $e->getMessage());
-            return false;
+            throw $e; // Re-lançar a exceção para tratamento na interface
         }
     }
     
     public function update($id, $data) {
         try {
+            // VALIDAÇÃO 1: Verificar se evento já existe (excluindo o atual)
+            if ($this->eventoExiste($data['nome'], $data['data_inicio'], $data['local_evento'], $id)) {
+                throw new Exception("Já existe outro evento com o mesmo nome, data e local.");
+            }
+            
+            // VALIDAÇÃO 2: Verificar se a data não é passada (apenas se estiver modificando a data)
+            $oldData = $this->getById($id);
+            if ($oldData['data_inicio'] != $data['data_inicio'] && !$this->validarData($data['data_inicio'])) {
+                throw new Exception("Não é permitido alterar para uma data passada.");
+            }
+            
+            // VALIDAÇÃO 3: Verificar faixa etária
+            if ($data['faixa_etaria_min'] > $data['faixa_etaria_max']) {
+                throw new Exception("A idade mínima não pode ser maior que a idade máxima.");
+            }
+            
             // Buscar dados antigos
             $oldData = $this->getById($id);
+            
+            // Calcular data_fim automaticamente
+            $data_inicio = new DateTime($data['data_inicio']);
+            $duracao_horas = intval($data['duracao_horas']);
+            $data_fim = $data_inicio->add(new DateInterval('PT' . $duracao_horas . 'H'));
+            $data_fim_evento = $data_fim->format('Y-m-d H:i:s');
             
             $query = "UPDATE eventos SET nome = :nome, tipo_evento = :tipo_evento, 
                       descricao = :descricao, data_inicio = :data_inicio, data_fim_evento = :data_fim_evento,
@@ -255,7 +416,7 @@ class EventosController {
             $stmt->bindParam(':tipo_evento', $data['tipo_evento']);
             $stmt->bindParam(':descricao', $data['descricao']);
             $stmt->bindParam(':data_inicio', $data['data_inicio']);
-            $stmt->bindParam(':data_fim_evento', $data['data_fim_evento']);
+            $stmt->bindParam(':data_fim_evento', $data_fim_evento);
             $stmt->bindParam(':faixa_etaria_min', $data['faixa_etaria_min']);
             $stmt->bindParam(':faixa_etaria_max', $data['faixa_etaria_max']);
             $stmt->bindParam(':capacidade_maxima', $data['capacidade_maxima']);
@@ -274,7 +435,7 @@ class EventosController {
             
         } catch (Exception $e) {
             error_log("Erro no EventosController::update: " . $e->getMessage());
-            return false;
+            throw $e; // Re-lançar a exceção para tratamento na interface
         }
     }
     
@@ -320,6 +481,41 @@ class EventosController {
     
     public function addCriancaToEvento($evento_id, $crianca_id, $observacoes = '') {
         try {
+            // VALIDAÇÃO: Verificar se a criança tem idade adequada para o evento
+            if (!$this->validarIdadeCrianca($crianca_id, $evento_id)) {
+                throw new Exception("A criança não está na faixa etária permitida para este evento.");
+            }
+            
+            // Verificar se a criança já está inscrita no evento
+            $queryCheck = "SELECT COUNT(*) as total FROM evento_criancas 
+                          WHERE evento_id = :evento_id AND crianca_id = :crianca_id";
+            $stmtCheck = $this->conn->prepare($queryCheck);
+            $stmtCheck->bindParam(':evento_id', $evento_id);
+            $stmtCheck->bindParam(':crianca_id', $crianca_id);
+            $stmtCheck->execute();
+            $alreadyRegistered = $stmtCheck->fetch()['total'] > 0;
+            
+            if ($alreadyRegistered) {
+                throw new Exception("A criança já está inscrita neste evento.");
+            }
+            
+            // Verificar capacidade do evento
+            $queryCapacity = "SELECT capacidade_maxima FROM eventos WHERE id = :evento_id";
+            $stmtCapacity = $this->conn->prepare($queryCapacity);
+            $stmtCapacity->bindParam(':evento_id', $evento_id);
+            $stmtCapacity->execute();
+            $capacidade = $stmtCapacity->fetch()['capacidade_maxima'];
+            
+            $queryCount = "SELECT COUNT(*) as total FROM evento_criancas WHERE evento_id = :evento_id";
+            $stmtCount = $this->conn->prepare($queryCount);
+            $stmtCount->bindParam(':evento_id', $evento_id);
+            $stmtCount->execute();
+            $inscritos = $stmtCount->fetch()['total'];
+            
+            if ($inscritos >= $capacidade) {
+                throw new Exception("O evento já atingiu sua capacidade máxima.");
+            }
+            
             $query = "INSERT INTO evento_criancas (evento_id, crianca_id, observacoes) 
                       VALUES (:evento_id, :crianca_id, :observacoes)";
             $stmt = $this->conn->prepare($query);
@@ -337,7 +533,7 @@ class EventosController {
             
         } catch (Exception $e) {
             error_log("Erro no EventosController::addCriancaToEvento: " . $e->getMessage());
-            return false;
+            throw $e; // Re-lançar a exceção para tratamento na interface
         }
     }
     
@@ -462,10 +658,26 @@ class EventosController {
             $params = [];
             
             if ($evento_id) {
-                $whereClause = "WHERE c.id NOT IN (
-                    SELECT crianca_id FROM evento_criancas WHERE evento_id = :evento_id
-                )";
-                $params[':evento_id'] = $evento_id;
+                // Buscar faixa etária do evento
+                $queryEvento = "SELECT faixa_etaria_min, faixa_etaria_max FROM eventos WHERE id = :evento_id";
+                $stmtEvento = $this->conn->prepare($queryEvento);
+                $stmtEvento->bindParam(':evento_id', $evento_id);
+                $stmtEvento->execute();
+                $evento = $stmtEvento->fetch();
+                
+                if ($evento) {
+                    $whereClause = "WHERE c.id NOT IN (
+                        SELECT crianca_id FROM evento_criancas WHERE evento_id = :evento_id
+                    ) AND c.idade BETWEEN :idade_min AND :idade_max";
+                    $params[':evento_id'] = $evento_id;
+                    $params[':idade_min'] = $evento['faixa_etaria_min'];
+                    $params[':idade_max'] = $evento['faixa_etaria_max'];
+                } else {
+                    $whereClause = "WHERE c.id NOT IN (
+                        SELECT crianca_id FROM evento_criancas WHERE evento_id = :evento_id
+                    )";
+                    $params[':evento_id'] = $evento_id;
+                }
             }
             
             $query = "SELECT c.id, c.nome_completo, c.idade, c.data_nascimento
@@ -488,7 +700,7 @@ class EventosController {
         }
     }
     
-    // MÉTODO CORRIGIDO - Este é o método que estava faltando
+    // MÉTODO: Obter eventos para check-in
     public function getEventosParaCheckin() {
         try {
             // Buscar eventos que estão ativos ou que ocorrem hoje/futuramente
@@ -548,5 +760,6 @@ class EventosController {
             return false;
         }
     }
+    
 }
 ?>

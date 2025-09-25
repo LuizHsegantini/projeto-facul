@@ -164,6 +164,7 @@ function validarCPF($cpf) {
             <p>Sistema de Eventos Infantis - MagicKids</p>
         </div>
         
+        
         <div class="form-body">
             <?php if ($message): ?>
             <div class="alert alert-<?php echo $messageType; ?>" role="alert">
@@ -339,6 +340,17 @@ function validarCPF($cpf) {
             </form>
         </div>
     </div>
+
+        <!-- Botão Flutuante Mágico para Crianças -->
+    <a href="models/dashboard_eventos.php" class="btn-magic-floating" title="Ir para o Mundo Mágico">
+        <div class="magic-sparkle"></div>
+        <div class="magic-sparkle delay-1"></div>
+        <div class="magic-sparkle delay-2"></div>
+        <div class="magic-icon">
+            <i class="fas fa-fairy-wand"></i>
+        </div>
+        <span class="magic-tooltip">Mundo Mágico! ✨</span>
+    </a>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <script>

@@ -28,6 +28,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     break;
                 }
 
+                // Validação de datas
+                $dataInicio = $_POST['data_inicio'] ?? '';
+                $dataFimPrevista = $_POST['data_fim_prevista'] ?? '';
+                
+                if ($dataInicio && $dataFimPrevista && $dataFimPrevista < $dataInicio) {
+                    $messageType = 'danger';
+                    $message = 'A data fim prevista não pode ser anterior à data de início.';
+                    break;
+                }
+
                 $result = $controller->create($_POST, $userId);
                 $messageType = $result['type'];
                 $message = $result['message'];
@@ -37,6 +47,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!$canManageAtividades) {
                     $messageType = 'danger';
                     $message = 'Voce nao tem permissao para editar atividades.';
+                    break;
+                }
+
+                // Validação de datas
+                $dataInicio = $_POST['data_inicio'] ?? '';
+                $dataFimPrevista = $_POST['data_fim_prevista'] ?? '';
+                $dataFimReal = $_POST['data_fim_real'] ?? '';
+                
+                // Validar data de início vs data fim prevista
+                if ($dataInicio && $dataFimPrevista && $dataFimPrevista < $dataInicio) {
+                    $messageType = 'danger';
+                    $message = 'A data fim prevista não pode ser anterior à data de início.';
+                    break;
+                }
+                
+                // Validar data de início vs data fim real
+                if ($dataInicio && $dataFimReal && $dataFimReal < $dataInicio) {
+                    $messageType = 'danger';
+                    $message = 'A data fim real não pode ser anterior à data de início.';
+                    break;
+                }
+                
+                // Validar data fim prevista vs data fim real
+                if ($dataFimPrevista && $dataFimReal && $dataFimReal < $dataFimPrevista) {
+                    $messageType = 'danger';
+                    $message = 'A data fim real não pode ser anterior à data fim prevista.';
                     break;
                 }
 
@@ -94,11 +130,25 @@ $currentPage = $listData['current_page'];
 
 $eventos = $controller->getEventos();
 $responsaveis = $controller->getResponsaveis();
-$tiposAtividade = $controller->getTiposAtividade();
+// Remover a linha que busca tipos de atividade do controller
+// $tiposAtividade = $controller->getTiposAtividade();
 $resumo = $controller->getResumo();
 
 $currentUserName = $currentUser['nome_completo'] ?? ($currentUser['nome'] ?? '');
 $currentUserPerfil = $currentUser['perfil'] ?? '';
+
+// Definir tipos de atividade fixos
+$tiposAtividade = [
+    'Recreação',
+    'Alimentação',
+    'Oficina',
+    'Show',
+    'Brincadeira',
+    'Cuidados',
+    'Limpeza',
+    'Setup',
+    'Outro'
+];
 
 // Definir permissões por perfil (igual ao dashboard)
 $permissions = [
@@ -506,7 +556,14 @@ function hasUserPermission($permission) {
                         </div>
                         <div class="col-md-6">
                             <label for="tipo_atividade" class="form-label">Tipo de Atividade *</label>
-                            <input type="text" class="form-control" id="tipo_atividade" name="tipo_atividade" list="tipoAtividadeList" required>
+                            <select class="form-select" id="tipo_atividade" name="tipo_atividade" required>
+                                <option value="">Selecione o tipo</option>
+                                <?php foreach ($tiposAtividade as $tipo): ?>
+                                <option value="<?php echo htmlspecialchars($tipo, ENT_QUOTES, 'UTF-8'); ?>">
+                                    <?php echo htmlspecialchars($tipo, ENT_QUOTES, 'UTF-8'); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div class="col-12">
                             <label for="descricao" class="form-label">Descrição</label>
@@ -588,7 +645,14 @@ function hasUserPermission($permission) {
                         </div>
                         <div class="col-md-6">
                             <label for="editTipo" class="form-label">Tipo de Atividade *</label>
-                            <input type="text" class="form-control" id="editTipo" name="tipo_atividade" list="tipoAtividadeList" required>
+                            <select class="form-select" id="editTipo" name="tipo_atividade" required>
+                                <option value="">Selecione o tipo</option>
+                                <?php foreach ($tiposAtividade as $tipo): ?>
+                                <option value="<?php echo htmlspecialchars($tipo, ENT_QUOTES, 'UTF-8'); ?>">
+                                    <?php echo htmlspecialchars($tipo, ENT_QUOTES, 'UTF-8'); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div class="col-12">
                             <label for="editDescricao" class="form-label">Descrição</label>
@@ -711,21 +775,141 @@ function hasUserPermission($permission) {
 </div>
 <?php endif; ?>
 <?php endif; ?>
-    <datalist id="tipoAtividadeList">
-        <?php foreach ($tiposAtividade as $tipo): ?>
-        <option value="<?php echo htmlspecialchars($tipo, ENT_QUOTES, 'UTF-8'); ?>"></option>
-        <?php endforeach; ?>
-    </datalist>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Script JavaScript permanece igual
+        // Script JavaScript atualizado para lidar com o select no modal de edição e validação de datas
         document.addEventListener('DOMContentLoaded', function () {
+            
+            // Função para validar datas
+            function validateDates(startDateInput, endDateInput, errorMessage) {
+                function validate() {
+                    const startDate = new Date(startDateInput.value);
+                    const endDate = new Date(endDateInput.value);
+                    
+                    if (startDateInput.value && endDateInput.value && endDate < startDate) {
+                        endDateInput.setCustomValidity(errorMessage);
+                        endDateInput.classList.add('is-invalid');
+                        
+                        // Adicionar ou atualizar mensagem de erro
+                        let errorDiv = endDateInput.parentNode.querySelector('.invalid-feedback');
+                        if (!errorDiv) {
+                            errorDiv = document.createElement('div');
+                            errorDiv.className = 'invalid-feedback';
+                            endDateInput.parentNode.appendChild(errorDiv);
+                        }
+                        errorDiv.textContent = errorMessage;
+                    } else {
+                        endDateInput.setCustomValidity('');
+                        endDateInput.classList.remove('is-invalid');
+                        
+                        // Remover mensagem de erro se existir
+                        let errorDiv = endDateInput.parentNode.querySelector('.invalid-feedback');
+                        if (errorDiv) {
+                            errorDiv.remove();
+                        }
+                    }
+                }
+                
+                startDateInput.addEventListener('change', validate);
+                endDateInput.addEventListener('change', validate);
+            }
+            
+            // Validação para modal de criação
+            const createStartDate = document.getElementById('data_inicio');
+            const createEndPrevista = document.getElementById('data_fim_prevista');
+            
+            if (createStartDate && createEndPrevista) {
+                validateDates(createStartDate, createEndPrevista, 'A data fim prevista não pode ser anterior à data de início');
+            }
+            
+            // Validação para modal de edição
+            const editStartDate = document.getElementById('editInicio');
+            const editEndPrevista = document.getElementById('editPrevista');
+            const editEndReal = document.getElementById('editReal');
+            
+            if (editStartDate && editEndPrevista) {
+                validateDates(editStartDate, editEndPrevista, 'A data fim prevista não pode ser anterior à data de início');
+            }
+            
+            if (editStartDate && editEndReal) {
+                validateDates(editStartDate, editEndReal, 'A data fim real não pode ser anterior à data de início');
+            }
+            
+            // Validação entre data fim prevista e data fim real
+            if (editEndPrevista && editEndReal) {
+                function validateEndDates() {
+                    const prevista = new Date(editEndPrevista.value);
+                    const real = new Date(editEndReal.value);
+                    
+                    if (editEndPrevista.value && editEndReal.value && real < prevista) {
+                        editEndReal.setCustomValidity('A data fim real não pode ser anterior à data fim prevista');
+                        editEndReal.classList.add('is-invalid');
+                        
+                        let errorDiv = editEndReal.parentNode.querySelector('.invalid-feedback');
+                        if (!errorDiv) {
+                            errorDiv = document.createElement('div');
+                            errorDiv.className = 'invalid-feedback';
+                            editEndReal.parentNode.appendChild(errorDiv);
+                        }
+                        errorDiv.textContent = 'A data fim real não pode ser anterior à data fim prevista';
+                    } else {
+                        editEndReal.setCustomValidity('');
+                        editEndReal.classList.remove('is-invalid');
+                        
+                        let errorDiv = editEndReal.parentNode.querySelector('.invalid-feedback');
+                        if (errorDiv) {
+                            errorDiv.remove();
+                        }
+                    }
+                }
+                
+                editEndPrevista.addEventListener('change', validateEndDates);
+                editEndReal.addEventListener('change', validateEndDates);
+            }
+            
+            // Validação no envio dos formulários
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    const invalidFields = form.querySelectorAll('.is-invalid');
+                    if (invalidFields.length > 0) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // Mostrar alerta
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
+                        alertDiv.innerHTML = `
+                            <strong>Erro de validação:</strong> Verifique as datas informadas. As datas finais não podem ser anteriores às datas iniciais.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                        `;
+                        
+                        const modalBody = form.querySelector('.modal-body');
+                        const existingAlert = modalBody.querySelector('.alert');
+                        if (existingAlert) {
+                            existingAlert.remove();
+                        }
+                        modalBody.insertBefore(alertDiv, modalBody.firstChild);
+                    }
+                });
+            });
+
             var editModal = document.getElementById('editAtividadeModal');
             if (editModal) {
                 editModal.addEventListener('show.bs.modal', function (event) {
                     var button = event.relatedTarget;
                     if (!button) { return; }
+
+                    // Limpar validações anteriores
+                    const invalidFields = editModal.querySelectorAll('.is-invalid');
+                    invalidFields.forEach(field => {
+                        field.classList.remove('is-invalid');
+                        field.setCustomValidity('');
+                    });
+                    
+                    const alerts = editModal.querySelectorAll('.alert');
+                    alerts.forEach(alert => alert.remove());
 
                     editModal.querySelector('#editAtividadeId').value = button.getAttribute('data-id') || '';
                     editModal.querySelector('#editTitulo').value = button.getAttribute('data-titulo') || '';
@@ -739,6 +923,21 @@ function hasUserPermission($permission) {
                     editModal.querySelector('#editInicio').value = button.getAttribute('data-inicio') || '';
                     editModal.querySelector('#editPrevista').value = button.getAttribute('data-prevista') || '';
                     editModal.querySelector('#editReal').value = button.getAttribute('data-real') || '';
+                });
+            }
+            
+            var createModal = document.getElementById('createAtividadeModal');
+            if (createModal) {
+                createModal.addEventListener('show.bs.modal', function (event) {
+                    // Limpar validações anteriores
+                    const invalidFields = createModal.querySelectorAll('.is-invalid');
+                    invalidFields.forEach(field => {
+                        field.classList.remove('is-invalid');
+                        field.setCustomValidity('');
+                    });
+                    
+                    const alerts = createModal.querySelectorAll('.alert');
+                    alerts.forEach(alert => alert.remove());
                 });
             }
 

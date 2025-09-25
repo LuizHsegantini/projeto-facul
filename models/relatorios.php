@@ -162,7 +162,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
         
         <ul class="nav flex-column">
             <li class="nav-item">
-                <a class="nav-link active" href="dashboard_eventos.php">
+                <a class="nav-link" href="dashboard_eventos.php">
                     <i class="fas fa-tachometer-alt"></i>Dashboard
                 </a>
             </li>
@@ -225,7 +225,7 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
             
             <?php if (hasUserPermission('relatorios')): ?>
             <li class="nav-item">
-                <a class="nav-link" href="relatorios.php">
+                <a class="nav-link active" href="relatorios.php">
                     <i class="fas fa-chart-bar"></i>Relatórios
                 </a>
             </li>
@@ -239,6 +239,12 @@ $currentUserPerfil = $currentUser['perfil'] ?? '';
             </li>
             <?php endif; ?>
         </ul>
+        </div>
+        <div class="p-3 border-top border-white-25 text-white-75">
+            <div class="fw-semibold">Logado como</div>
+            <div><?php echo htmlspecialchars($currentUserName, ENT_QUOTES, 'UTF-8'); ?></div>
+            <div class="small">Perfil: <?php echo htmlspecialchars($currentUserPerfil, ENT_QUOTES, 'UTF-8'); ?></div>
+        </div>
     </nav>
     <!-- Main Content -->
     <main class="main-content">

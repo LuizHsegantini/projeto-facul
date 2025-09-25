@@ -96,86 +96,91 @@ $messageType = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
-        switch ($_POST['action']) {
-            case 'create':
-                if (hasUserPermission('eventos')) {
-                    $result = $eventosController->create($_POST);
-                    if ($result) {
-                        $message = 'Evento criado com sucesso!';
-                        $messageType = 'success';
+        try {
+            switch ($_POST['action']) {
+                case 'create':
+                    if (hasUserPermission('eventos')) {
+                        $result = $eventosController->create($_POST);
+                        if ($result) {
+                            $message = 'Evento criado com sucesso!';
+                            $messageType = 'success';
+                        } else {
+                            $message = 'Erro ao criar evento.';
+                            $messageType = 'danger';
+                        }
                     } else {
-                        $message = 'Erro ao criar evento.';
+                        $message = 'Você não tem permissão para criar eventos.';
                         $messageType = 'danger';
                     }
-                } else {
-                    $message = 'Você não tem permissão para criar eventos.';
-                    $messageType = 'danger';
-                }
-                break;
+                    break;
+                    
+                case 'update':
+                    if (hasUserPermission('eventos')) {
+                        $result = $eventosController->update($_POST['id'], $_POST);
+                        if ($result) {
+                            $message = 'Evento atualizado com sucesso!';
+                            $messageType = 'success';
+                        } else {
+                            $message = 'Erro ao atualizar evento.';
+                            $messageType = 'danger';
+                        }
+                    } else {
+                        $message = 'Você não tem permissão para editar eventos.';
+                        $messageType = 'danger';
+                    }
+                    break;
                 
-            case 'update':
-                if (hasUserPermission('eventos')) {
-                    $result = $eventosController->update($_POST['id'], $_POST);
-                    if ($result) {
-                        $message = 'Evento atualizado com sucesso!';
-                        $messageType = 'success';
+                case 'remove_crianca':
+                    if (hasUserPermission('eventos')) {
+                        $result = $eventosController->removeCriancaFromEvento($_POST['evento_id'], $_POST['crianca_id']);
+                        if ($result) {
+                            $message = 'Criança removida do evento com sucesso!';
+                            $messageType = 'success';
+                        } else {
+                            $message = 'Erro ao remover criança do evento.';
+                            $messageType = 'danger';
+                        }
                     } else {
-                        $message = 'Erro ao atualizar evento.';
+                        $message = 'Você não tem permissão para remover crianças do evento.';
                         $messageType = 'danger';
                     }
-                } else {
-                    $message = 'Você não tem permissão para editar eventos.';
-                    $messageType = 'danger';
-                }
-                break;
-                
-            case 'delete':
-                if ($currentUser['perfil'] === 'administrador') {
-                    $result = $eventosController->delete($_POST['id']);
-                    if ($result) {
-                        $message = 'Evento excluído com sucesso!';
-                        $messageType = 'success';
+                    break;
+                    
+                case 'delete':
+                    if ($currentUser['perfil'] === 'administrador') {
+                        $result = $eventosController->delete($_POST['id']);
+                        if ($result) {
+                            $message = 'Evento excluído com sucesso!';
+                            $messageType = 'success';
+                        } else {
+                            $message = 'Erro ao excluir evento.';
+                            $messageType = 'danger';
+                        }
                     } else {
-                        $message = 'Erro ao excluir evento.';
+                        $message = 'Apenas administradores podem excluir eventos.';
                         $messageType = 'danger';
                     }
-                } else {
-                    $message = 'Você não tem permissão para excluir eventos.';
-                    $messageType = 'danger';
-                }
-                break;
-                
-            case 'add_crianca':
-                if (hasUserPermission('eventos')) {
-                    $result = $eventosController->addCriancaToEvento($_POST['evento_id'], $_POST['crianca_id'], $_POST['observacoes'] ?? '');
-                    if ($result) {
-                        $message = 'Criança adicionada ao evento com sucesso!';
-                        $messageType = 'success';
+                    break;
+                    
+                case 'add_crianca':
+                    if (hasUserPermission('eventos')) {
+                        $result = $eventosController->addCriancaToEvento($_POST['evento_id'], $_POST['crianca_id'], $_POST['observacoes'] ?? '');
+                        if ($result) {
+                            $message = 'Criança adicionada ao evento com sucesso!';
+                            $messageType = 'success';
+                        } else {
+                            $message = 'Erro ao adicionar criança ao evento.';
+                            $messageType = 'danger';
+                        }
                     } else {
-                        $message = 'Erro ao adicionar criança ao evento.';
+                        $message = 'Você não tem permissão para adicionar crianças ao evento.';
                         $messageType = 'danger';
                     }
-                } else {
-                    $message = 'Você não tem permissão para gerenciar inscrições.';
-                    $messageType = 'danger';
-                }
-                break;
-                
-            case 'remove_crianca':
-                if (hasUserPermission('eventos')) {
-                    $result = $eventosController->removeCriancaFromEvento($_POST['evento_id'], $_POST['crianca_id']);
-                    if ($result) {
-                        $message = 'Criança removida do evento com sucesso!';
-                        $messageType = 'success';
-                    } else {
-                        $message = 'Erro ao remover criança do evento.';
-                        $messageType = 'danger';
-                    }
-                } else {
-                    $message = 'Você não tem permissão para gerenciar inscrições.';
-                    $messageType = 'danger';
-                }
-                break;
+                    break;
+            }
+        } catch (Exception $e) {
+            $message = $e->getMessage();
+            $messageType = 'danger';
         }
     }
 }
@@ -657,96 +662,119 @@ if (isset($_GET['id'])) {
         <?php endif; ?>
     </main>
     
-    <!-- Modal de Criação de Evento -->
-    <div class="modal fade" id="createEventoModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Criar Novo Evento</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form method="POST">
-                    <div class="modal-body">
-                        <input type="hidden" name="action" value="create">
-                        <input type="hidden" name="status" value="planejado">
+    <!-- Modal de Criação de Evento COM AJAX -->
+<div class="modal fade" id="createEventoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Criar Novo Evento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createEventoForm" method="POST" onsubmit="return submitEventoForm(this)">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="create">
+                    <input type="hidden" name="status" value="planejado">
+                    
+                    <!-- Mensagem de erro específica -->
+                    <div id="createEventoError" class="alert alert-danger d-none"></div>
+                    
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="nome" class="form-label">Nome do Evento *</label>
+                            <input type="text" class="form-control" id="nome" name="nome" required 
+                                   onblur="validarNomeEvento(this.value)">
+                            <div class="invalid-feedback" id="nomeError"></div>
+                        </div>
                         
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label for="nome" class="form-label">Nome do Evento</label>
-                                <input type="text" class="form-control" name="nome" required>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label for="tipo_evento" class="form-label">Tipo de Evento</label>
-                                <select class="form-select" name="tipo_evento" required>
-                                    <option value="">Selecione...</option>
-                                    <option value="Festa de Aniversário">Festa de Aniversário</option>
-                                    <option value="Workshop">Workshop</option>
-                                    <option value="Acampamento">Acampamento</option>
-                                    <option value="Gincana">Gincana</option>
-                                    <option value="Teatro">Teatro</option>
-                                    <option value="Esportes">Esportes</option>
-                                    <option value="Arte e Pintura">Arte e Pintura</option>
-                                    <option value="Culinária">Culinária</option>
-                                    <option value="Dança">Dança</option>
-                                    <option value="Outros">Outros</option>
-                                </select>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label for="coordenador_id" class="form-label">Coordenador</label>
-                                <select class="form-select" name="coordenador_id" required>
-                                    <option value="">Selecione...</option>
-                                    <?php foreach ($coordenadores as $coord): ?>
-                                    <option value="<?php echo $coord['id']; ?>"><?php echo htmlspecialchars($coord['nome_completo']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            
-                            <div class="col-12">
-                                <label for="descricao" class="form-label">Descrição</label>
-                                <textarea class="form-control" name="descricao" rows="3" placeholder="Descreva as atividades e objetivos do evento"></textarea>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label for="data_inicio" class="form-label">Data e Hora de Início</label>
-                                <input type="datetime-local" class="form-control" name="data_inicio" required>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label for="duracao_horas" class="form-label">Duração (horas)</label>
-                                <input type="number" class="form-control" name="duracao_horas" min="1" max="24" required>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label for="faixa_etaria_min" class="form-label">Idade Mínima</label>
-                                <input type="number" class="form-control" name="faixa_etaria_min" min="1" max="18" required>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label for="faixa_etaria_max" class="form-label">Idade Máxima</label>
-                                <input type="number" class="form-control" name="faixa_etaria_max" min="1" max="18" required>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label for="capacidade_maxima" class="form-label">Capacidade Máxima</label>
-                                <input type="number" class="form-control" name="capacidade_maxima" min="5" max="100" required>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label for="local_evento" class="form-label">Local</label>
-                                <input type="text" class="form-control" name="local_evento" placeholder="Ex: Salão de Festas A" required>
-                            </div>
+                        <div class="col-md-6">
+                            <label for="tipo_evento" class="form-label">Tipo de Evento *</label>
+                            <select class="form-select" id="tipo_evento" name="tipo_evento" required>
+                                <option value="">Selecione...</option>
+                                <option value="Festa de Aniversário">Festa de Aniversário</option>
+                                <option value="Workshop">Workshop</option>
+                                <option value="Acampamento">Acampamento</option>
+                                <option value="Gincana">Gincana</option>
+                                <option value="Teatro">Teatro</option>
+                                <option value="Esportes">Esportes</option>
+                                <option value="Arte e Pintura">Arte e Pintura</option>
+                                <option value="Culinária">Culinária</option>
+                                <option value="Dança">Dança</option>
+                                <option value="Outros">Outros</option>
+                            </select>
+                            <div class="invalid-feedback" id="tipoEventoError"></div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="coordenador_id" class="form-label">Coordenador *</label>
+                            <select class="form-select" id="coordenador_id" name="coordenador_id" required>
+                                <option value="">Selecione...</option>
+                                <?php foreach ($coordenadores as $coord): ?>
+                                <option value="<?php echo $coord['id']; ?>"><?php echo htmlspecialchars($coord['nome_completo']); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="invalid-feedback" id="coordenadorError"></div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="descricao" class="form-label">Descrição</label>
+                            <textarea class="form-control" id="descricao" name="descricao" rows="3" 
+                                      placeholder="Descreva as atividades e objetivos do evento"></textarea>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="data_inicio" class="form-label">Data e Hora de Início *</label>
+                            <input type="datetime-local" class="form-control" id="data_inicio" name="data_inicio" required
+                                   onchange="validarDataEvento(this.value)">
+                            <div class="invalid-feedback" id="dataInicioError"></div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="duracao_horas" class="form-label">Duração (horas) *</label>
+                            <input type="number" class="form-control" id="duracao_horas" name="duracao_horas" 
+                                   min="1" max="24" required>
+                            <div class="invalid-feedback" id="duracaoError"></div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="faixa_etaria_min" class="form-label">Idade Mínima *</label>
+                            <input type="number" class="form-control" id="faixa_etaria_min" name="faixa_etaria_min" 
+                                   min="1" max="18" required onchange="validarFaixaEtaria()">
+                            <div class="invalid-feedback" id="idadeMinError"></div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="faixa_etaria_max" class="form-label">Idade Máxima *</label>
+                            <input type="number" class="form-control" id="faixa_etaria_max" name="faixa_etaria_max" 
+                                   min="1" max="18" required onchange="validarFaixaEtaria()">
+                            <div class="invalid-feedback" id="idadeMaxError"></div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="capacidade_maxima" class="form-label">Capacidade Máxima *</label>
+                            <input type="number" class="form-control" id="capacidade_maxima" name="capacidade_maxima" 
+                                   min="5" max="100" required>
+                            <div class="invalid-feedback" id="capacidadeError"></div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="local_evento" class="form-label">Local *</label>
+                            <input type="text" class="form-control" id="local_evento" name="local_evento" 
+                                   placeholder="Ex: Salão de Festas A" required>
+                            <div class="invalid-feedback" id="localError"></div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Criar Evento</button>
-                    </div>
-                </form>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="submitButton">
+                        <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                        Criar Evento
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
     
     <!-- Modal de Edição de Evento -->
     <div class="modal fade" id="editEventoModal" tabindex="-1">
@@ -868,7 +896,7 @@ if (isset($_GET['id'])) {
                                 <i class="fas fa-users fa-3x text-muted mb-3"></i>
                                 <h6 class="text-muted">Nenhuma criança disponível</h6>
                                 <p class="text-muted">Todas as crianças compatíveis já estão inscritas ou não há crianças na faixa etária do evento.</p>
-                                <a href="cadastro_crianca.php" class="btn btn-primary">
+                                <a href="/Faculdade/cadastro_crianca.php" class="btn btn-primary">
                                     <i class="fas fa-plus me-2"></i>Cadastrar Nova Criança
                                 </a>
                             </div>
@@ -1150,19 +1178,6 @@ if (isset($_GET['id'])) {
             new bootstrap.Modal(document.getElementById('deleteModal')).show();
         }
         
-        function removeCrianca(eventoId, criancaId, nomeCrianca) {
-            if (confirm(`Tem certeza que deseja remover ${nomeCrianca} deste evento?`)) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.innerHTML = `
-                    <input type="hidden" name="action" value="remove_crianca">
-                    <input type="hidden" name="evento_id" value="${eventoId}">
-                    <input type="hidden" name="crianca_id" value="${criancaId}">
-                `;
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
         
         // Calcular automaticamente data_fim_evento baseada na duração
         document.addEventListener('DOMContentLoaded', function() {
@@ -1210,7 +1225,220 @@ if (isset($_GET['id'])) {
             });
         });
     </script>
+
+    <script>
+        function removeCrianca(eventoId, criancaId, nomeCrianca) {
+    if (confirm(`Tem certeza que deseja remover ${nomeCrianca} deste evento?`)) {
+        // Criar formulário temporário
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = ''; // Enviar para a mesma página
+        form.style.display = 'none';
+        
+        // Adicionar campos necessários
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'remove_crianca';
+        
+        const eventoInput = document.createElement('input');
+        eventoInput.type = 'hidden';
+        eventoInput.name = 'evento_id';
+        eventoInput.value = eventoId;
+        
+        const criancaInput = document.createElement('input');
+        criancaInput.type = 'hidden';
+        criancaInput.name = 'crianca_id';
+        criancaInput.value = criancaId;
+        
+        // Adicionar inputs ao formulário
+        form.appendChild(actionInput);
+        form.appendChild(eventoInput);
+        form.appendChild(criancaInput);
+        
+        // Adicionar formulário ao DOM e submeter
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+        
+        
+    <script>
+// Variável para armazenar dados do formulário em caso de erro
+let formDataBackup = null;
+
+// Função para submeter o formulário via AJAX
+function submitEventoForm(form) {
+    event.preventDefault();
     
+    // Mostrar loading
+    const submitBtn = document.getElementById('submitButton');
+    const spinner = submitBtn.querySelector('.spinner-border');
+    submitBtn.disabled = true;
+    spinner.classList.remove('d-none');
+    
+    // Esconder mensagem de erro anterior
+    document.getElementById('createEventoError').classList.add('d-none');
+    
+    // Coletar dados do formulário
+    const formData = new FormData(form);
+    
+    // Fazer backup dos dados
+    formDataBackup = {};
+    for (let [key, value] of formData.entries()) {
+        formDataBackup[key] = value;
+    }
+    
+    // Enviar via AJAX
+    fetch('', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(html => {
+        // Verificar se a resposta contém sucesso ou erro
+        if (html.includes('Evento criado com sucesso')) {
+            // Sucesso - recarregar a página
+            window.location.reload();
+        } else {
+            // Erro - extrair mensagem de erro
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            const alert = tempDiv.querySelector('.alert-danger');
+            
+            if (alert) {
+                showFormError(alert.textContent);
+            } else {
+                showFormError('Erro ao criar evento. Tente novamente.');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        showFormError('Erro de conexão. Tente novamente.');
+    })
+    .finally(() => {
+        // Restaurar botão
+        submitBtn.disabled = false;
+        spinner.classList.add('d-none');
+    });
+    
+    return false;
+}
+
+// Função para mostrar erro no formulário
+function showFormError(message) {
+    const errorDiv = document.getElementById('createEventoError');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('d-none');
+    
+    // Restaurar dados do formulário do backup
+    if (formDataBackup) {
+        for (const [key, value] of Object.entries(formDataBackup)) {
+            const element = document.querySelector(`[name="${key}"]`);
+            if (element) {
+                element.value = value;
+            }
+        }
+    }
+    
+    // Rolagem para o topo do modal
+    errorDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Validação em tempo real do nome do evento
+function validarNomeEvento(nome) {
+    if (nome.length < 3) {
+        showFieldError('nomeError', 'O nome deve ter pelo menos 3 caracteres');
+        return false;
+    }
+    clearFieldError('nomeError');
+    return true;
+}
+
+// Validação em tempo real da data
+function validarDataEvento(data) {
+    const dataEvento = new Date(data);
+    const dataAtual = new Date();
+    
+    if (dataEvento < dataAtual) {
+        showFieldError('dataInicioError', 'Não é permitido criar eventos com datas passadas');
+        return false;
+    }
+    clearFieldError('dataInicioError');
+    return true;
+}
+
+// Validação em tempo real da faixa etária
+function validarFaixaEtaria() {
+    const idadeMin = parseInt(document.getElementById('faixa_etaria_min').value);
+    const idadeMax = parseInt(document.getElementById('faixa_etaria_max').value);
+    
+    if (idadeMin && idadeMax && idadeMin > idadeMax) {
+        showFieldError('idadeMaxError', 'A idade máxima deve ser maior ou igual à idade mínima');
+        return false;
+    }
+    clearFieldError('idadeMinError');
+    clearFieldError('idadeMaxError');
+    return true;
+}
+
+// Funções auxiliares para mostrar/limpar erros de campo
+function showFieldError(fieldId, message) {
+    const errorElement = document.getElementById(fieldId);
+    const inputElement = document.getElementById(fieldId.replace('Error', ''));
+    
+    if (errorElement && inputElement) {
+        errorElement.textContent = message;
+        inputElement.classList.add('is-invalid');
+    }
+}
+
+function clearFieldError(fieldId) {
+    const errorElement = document.getElementById(fieldId);
+    const inputElement = document.getElementById(fieldId.replace('Error', ''));
+    
+    if (errorElement && inputElement) {
+        errorElement.textContent = '';
+        inputElement.classList.remove('is-invalid');
+    }
+}
+
+// Limpar formulário quando o modal for fechado
+document.getElementById('createEventoModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('createEventoForm').reset();
+    document.getElementById('createEventoError').classList.add('d-none');
+    formDataBackup = null;
+    
+    // Limpar todos os erros de campo
+    const errorElements = document.querySelectorAll('.invalid-feedback');
+    errorElements.forEach(element => element.textContent = '');
+    
+    const invalidInputs = document.querySelectorAll('.is-invalid');
+    invalidInputs.forEach(input => input.classList.remove('is-invalid'));
+});
+
+// Validação antes do envio
+document.getElementById('createEventoForm').addEventListener('submit', function(e) {
+    let isValid = true;
+    
+    // Validar todos os campos obrigatórios
+    const requiredFields = this.querySelectorAll('[required]');
+    requiredFields.forEach(field => {
+        if (!field.value.trim()) {
+            showFieldError(field.id + 'Error', 'Este campo é obrigatório');
+            isValid = false;
+        }
+    });
+    
+    if (!isValid) {
+        e.preventDefault();
+        showFormError('Por favor, preencha todos os campos obrigatórios.');
+    }
+});
+</script>
+
     <!-- Campo escondido para data_fim_evento nos formulários -->
     <script>
         document.querySelectorAll('form').forEach(form => {

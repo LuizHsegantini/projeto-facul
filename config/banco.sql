@@ -137,6 +137,7 @@ ADD data_inclusao TIMESTAMP NOT NULL DEFAULT NOW();
 
 
 
+
 -- Copiando estrutura para tabela sistema_projetos.eventos
 CREATE TABLE IF NOT EXISTS `eventos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -443,6 +444,31 @@ ALTER TABLE tarefas
   ADD usr_atualizacao VARCHAR(50);
 
 
+-- Atualizar a tabela equipes para usar ENUM fixo para especialidades
+ALTER TABLE equipes 
+MODIFY especialidade ENUM('Animação','Recreação','Culinária','Segurança','Limpeza','Arte','Música','Teatro','Esportes','Multidisciplinar') DEFAULT 'Multidisciplinar';
+
+-- Adicionar constraint para verificar capacidade máxima (se necessário)
+DELIMITER //
+CREATE TRIGGER verificar_capacidade_membros
+BEFORE INSERT ON equipe_membros
+FOR EACH ROW
+BEGIN
+    DECLARE capacidade_max INT;
+    DECLARE membros_atuais INT;
+    
+    SELECT capacidade_eventos INTO capacidade_max 
+    FROM equipes WHERE id = NEW.equipe_id;
+    
+    SELECT COUNT(*) INTO membros_atuais 
+    FROM equipe_membros WHERE equipe_id = NEW.equipe_id;
+    
+    IF membros_atuais >= capacidade_max THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Capacidade máxima de membros atingida para esta equipe';
+    END IF;
+END//
+DELIMITER ;
 
 -- Copiando estrutura para tabela sistema_projetos.usuarios
 CREATE TABLE IF NOT EXISTS `usuarios` (
